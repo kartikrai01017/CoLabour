@@ -96,7 +96,7 @@ export function SignupPage() {
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Join Co-Laber</h1>
+          <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Join CoLabour</h1>
           <p className="mt-2 text-gray-400">Create your account and start your journey</p>
         </div>
 
@@ -257,7 +257,7 @@ export function LoginPage() {
       <div className="mx-auto max-w-md w-full px-4 sm:px-6">
         <div className="mb-8 text-center animate-fade-in">
           <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Welcome Back</h1>
-          <p className="mt-2 text-gray-400">Sign in to your Co-Laber account</p>
+          <p className="mt-2 text-gray-400">Sign in to your CoLabour account</p>
         </div>
 
         <GlassCard className="p-8 animate-slide-up">

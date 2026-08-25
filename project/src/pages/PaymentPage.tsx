@@ -326,7 +326,7 @@ export function PaymentPage() {
         {/* Security note */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
           <ShieldCheck size={14} className="text-neon-emerald" />
-          Co-Laber never asks for your UPI PIN, password, or card details. Payments are made directly in your UPI app.
+          CoLabour never asks for your UPI PIN, password, or card details. Payments are made directly in your UPI app.
         </div>
       </div>
     </div>
