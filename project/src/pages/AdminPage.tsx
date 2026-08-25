@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Users, ShieldCheck, Briefcase, Wallet, TrendingUp, Loader2, CheckCircle, XCircle,
   Star, AlertTriangle, Activity, DollarSign, Clock,
@@ -17,8 +16,7 @@ interface WorkerWithUser extends WorkerProfile {
 }
 
 export function AdminPage() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { loading: authLoading } = useAuth();
   const [workers, setWorkers] = useState<WorkerWithUser[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -46,10 +44,8 @@ export function AdminPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate('/login'); return; }
-    if (user.role !== 'admin') { navigate('/customer/dashboard'); return; }
     fetchData();
-  }, [user, authLoading, navigate, fetchData]);
+  }, [authLoading, fetchData]);
 
   const handleToggleVerify = async (workerId: string, current: boolean) => {
     try {

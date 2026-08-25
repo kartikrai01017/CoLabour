@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
 import { LandingPage } from '@/pages/LandingPage';
 import { SignupPage, LoginPage } from '@/pages/AuthPages';
@@ -23,11 +24,21 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/workers" element={<WorkersDirectoryPage />} />
             <Route path="/workers/:id" element={<WorkerProfilePage />} />
-            <Route path="/book/:id" element={<BookingPage />} />
-            <Route path="/payment/:id" element={<PaymentPage />} />
-            <Route path="/worker/dashboard" element={<WorkerDashboardPage />} />
-            <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/book/:id" element={
+              <ProtectedRoute><BookingPage /></ProtectedRoute>
+            } />
+            <Route path="/payment/:id" element={
+              <ProtectedRoute><PaymentPage /></ProtectedRoute>
+            } />
+            <Route path="/worker/dashboard" element={
+              <ProtectedRoute allowedRoles={['worker']}><WorkerDashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/customer/dashboard" element={
+              <ProtectedRoute allowedRoles={['customer']}><CustomerDashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}><AdminPage /></ProtectedRoute>
+            } />
           </Routes>
         </div>
       </BrowserRouter>

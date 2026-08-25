@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Wrench, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Wrench, ArrowRight, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { GlowOrb } from '@/components/ui/Shared';
@@ -220,8 +220,26 @@ export function LoginPage() {
   const { refreshProfile } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function getFriendlyError(msg: string): string {
+    const lower = msg.toLowerCase();
+    if (lower.includes('invalid login credentials') || lower.includes('invalid email or password')) {
+      return 'Invalid email or password. Please try again.';
+    }
+    if (lower.includes('email not confirmed')) {
+      return 'Please confirm your email before signing in.';
+    }
+    if (lower.includes('too many requests')) {
+      return 'Too many login attempts. Please wait a moment and try again.';
+    }
+    if (lower.includes('network') || lower.includes('fetch')) {
+      return 'Network error. Check your internet connection.';
+    }
+    return msg || 'Login failed. Please try again.';
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -235,7 +253,6 @@ export function LoginPage() {
 
       await refreshProfile();
 
-      // Route based on role
       const { data: userData } = await supabase.from('users').select('role').eq('id', data.user.id).maybeSingle();
       const userRole = userData?.role;
       if (userRole === 'worker') navigate('/worker/dashboard');
@@ -243,7 +260,7 @@ export function LoginPage() {
       else navigate('/customer/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
-      setError(msg);
+      setError(getFriendlyError(msg));
     } finally {
       setLoading(false);
     }
@@ -266,8 +283,31 @@ export function LoginPage() {
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="input-field" placeholder="you@example.com" />
             </Field>
             <Field label="Password" required>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="input-field" placeholder="Your password" />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="input-field pr-10"
+                  placeholder="Your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </Field>
+
+            <div className="flex justify-end">
+              <Link to="/signup" className="text-xs text-gray-400 hover:text-neon-emeraldGlow transition-colors">
+                Forgot password?
+              </Link>
+            </div>
 
             {error && (
               <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">

@@ -10,7 +10,6 @@ import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { GlowOrb } from '@/components/ui/Shared';
 import { supabase, type Booking, type Payment, type WorkerWithUser } from '@/lib/supabase';
-import { useAuth } from '@/context/AuthContext';
 
 const UPI_APPS = [
   { name: 'GPay', scheme: 'tez', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
@@ -22,7 +21,6 @@ const UPI_APPS = [
 export function PaymentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
@@ -92,9 +90,8 @@ export function PaymentPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return; }
     fetchBookingData();
-  }, [user, navigate, fetchBookingData]);
+  }, [fetchBookingData]);
 
   // Polling engine
   useEffect(() => {
