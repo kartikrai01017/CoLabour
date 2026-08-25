@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, MapPin, Star, Loader2, SlidersHorizontal, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Loader2, SlidersHorizontal, ArrowRight, Handshake } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
-import { GlowOrb, StarRating } from '@/components/ui/Shared';
+import { FloatingShape, ParticleField, StarRating } from '@/components/ui/Shared';
 import { supabase, CATEGORIES, type WorkerWithUser } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 
@@ -33,11 +33,8 @@ export function WorkersDirectoryPage() {
       }
 
       const { data, error } = await query;
-      if (error) {
-        console.error('Error fetching workers:', error);
-      } else {
-        setWorkers((data as unknown as WorkerWithUser[]) ?? []);
-      }
+      if (error) console.error('Error fetching workers:', error);
+      else setWorkers((data as unknown as WorkerWithUser[]) ?? []);
       setLoading(false);
     }
     fetchWorkers();
@@ -68,34 +65,33 @@ export function WorkersDirectoryPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
-      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
+    <div className="relative min-h-screen overflow-hidden pt-20 pb-12 atmosphere">
+      <FloatingShape className="top-20 -left-20 h-[350px] w-[350px] animate-drift-slow" color="brass" />
+      <FloatingShape className="bottom-0 -right-20 h-[300px] w-[300px] animate-drift" color="sage" delay={2} />
+      <ParticleField />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Find Your Worker</h1>
-          <p className="mt-2 text-gray-400">Browse verified professionals across {CATEGORIES.length} categories</p>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Header — co-op framing */}
+        <div className="mb-6 animate-fade-in">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brass/60">Co-op members</p>
+          <h1 className="mt-1 font-display text-3xl font-bold text-white">Meet your <span className="gradient-text">co-workers</span></h1>
+          <p className="mt-2 text-sm text-muted">Every person here sets their own rate and keeps every rupee. No middleman. Just neighbours helping neighbours.</p>
         </div>
 
-        {/* Search bar */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        {/* Search */}
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-dark" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, skill, or location..."
-              className="w-full rounded-xl border border-white/10 bg-base-800/60 py-3 pl-12 pr-4 text-sm text-gray-200 outline-none transition-all focus:border-neon-emerald/40 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
+              className="search-input"
             />
           </div>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal size={18} className="text-gray-500" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="rounded-xl border border-white/10 bg-base-800/60 px-4 py-3 text-sm text-gray-200 outline-none focus:border-neon-emerald/40"
-            >
+            <SlidersHorizontal size={16} className="text-muted-dark" />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="search-input px-3">
               <option value="rating">Top Rated</option>
               <option value="rate_low">Lowest Rate</option>
               <option value="rate_high">Highest Rate</option>
@@ -104,41 +100,52 @@ export function WorkersDirectoryPage() {
         </div>
 
         {/* Category filters */}
-        <div className="mb-8 flex flex-wrap gap-2">
+        <div className="mb-7 flex flex-wrap gap-1.5">
           <CategoryChip label="All" active={selectedCategory === 'all'} onClick={() => handleCategoryChange('all')} />
           {CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat] ?? Search;
             const style = getCategoryStyle(cat);
             return (
-              <CategoryChip
-                key={cat}
-                label={cat}
-                icon={Icon}
-                active={selectedCategory === cat}
-                onClick={() => handleCategoryChange(cat)}
-                style={style}
-              />
+              <CategoryChip key={cat} label={cat} icon={Icon} active={selectedCategory === cat} onClick={() => handleCategoryChange(cat)} style={style} />
             );
           })}
         </div>
 
-        {/* Results */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 size={32} className="animate-spin text-neon-emerald" />
+            <Loader2 size={28} className="animate-spin text-brass" />
           </div>
         ) : filtered.length === 0 ? (
           <GlassCard className="p-12 text-center">
-            <p className="text-gray-400">No workers found. Try adjusting your filters.</p>
+            <p className="text-muted">No co-workers found. Try a different search.</p>
           </GlassCard>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((worker) => (
               <WorkerCard key={worker.id} worker={worker} />
             ))}
           </div>
         )}
       </div>
+
+      <style>{`
+        .search-input {
+          width: 100%;
+          border-radius: 0.75rem;
+          border: 1px solid rgba(255,255,255,0.04);
+          background: rgba(12,14,20,0.8);
+          padding: 0.625rem 0.875rem 0.625rem 2.5rem;
+          color: #c4c8d8;
+          font-size: 0.875rem;
+          outline: none;
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .search-input:focus {
+          border-color: rgba(197,160,89,0.25);
+          box-shadow: 0 0 0 3px rgba(197,160,89,0.05), 0 0 20px rgba(197,160,89,0.04);
+        }
+        .search-input::placeholder { color: #5a6080; }
+      `}</style>
     </div>
   );
 }
@@ -149,44 +156,45 @@ function WorkerCard({ worker }: { worker: WorkerWithUser }) {
 
   return (
     <Link to={`/workers/${worker.id}`}>
-      <GlassCard hover className="group h-full p-6">
-        <div className="flex items-start justify-between mb-4">
+      <GlassCard hover className="group h-full p-5">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className={`h-14 w-14 rounded-2xl border ${style.bg} ${style.border} flex items-center justify-center`}>
-              <Icon className={style.text} size={26} />
+            <div className={`h-11 w-11 rounded-xl border ${style.bg} ${style.border} flex items-center justify-center transition-all duration-500 group-hover:shadow-lg`}>
+              <Icon className={style.text} size={22} />
             </div>
             <div>
-              <h3 className="font-semibold text-white group-hover:text-neon-emeraldGlow transition-colors">
+              <h3 className="font-display font-semibold text-white text-sm group-hover:text-brass transition-colors duration-300">
                 {worker.users?.name ?? 'Unknown'}
               </h3>
-              <p className="text-sm text-gray-400">{worker.category}</p>
+              <p className="text-xs text-muted">{worker.category} · Co-op member</p>
             </div>
           </div>
-          <StarRating rating={worker.rating} />
+          <StarRating rating={worker.rating} size={14} />
         </div>
 
-        {worker.bio && <p className="text-sm text-gray-400 line-clamp-2 mb-4">{worker.bio}</p>}
+        {worker.bio && <p className="text-xs text-muted line-clamp-2 mb-3">{worker.bio}</p>}
 
         {worker.skills && worker.skills.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-1.5">
+          <div className="mb-3 flex flex-wrap gap-1">
             {worker.skills.slice(0, 3).map((skill) => (
               <Badge key={skill} variant="gray">{skill}</Badge>
             ))}
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-white/5 pt-4">
+        <div className="flex items-center justify-between border-t border-white/[0.04] pt-3">
           <div>
-            <span className="text-lg font-bold text-neon-emeraldGlow">₹{worker.hourly_rate}</span>
-            <span className="text-sm text-gray-500">/hr</span>
+            <span className="text-base font-bold text-white font-display">₹{worker.hourly_rate}</span>
+            <span className="text-xs text-muted-dark">/hr</span>
+            <span className="ml-1.5 text-[10px] text-sage font-medium">they keep 100%</span>
           </div>
-          <div className="flex items-center gap-1 text-sm text-gray-400">
-            {worker.location && <><MapPin size={14} /> {worker.location}</>}
+          <div className="flex items-center gap-1 text-xs text-muted">
+            {worker.location && <><MapPin size={12} /> {worker.location}</>}
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 text-sm text-neon-emerald opacity-0 transition-opacity group-hover:opacity-100">
-          View Profile <ArrowRight size={14} />
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-brass opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-1">
+          View profile <ArrowRight size={12} />
         </div>
       </GlassCard>
     </Link>
@@ -194,22 +202,18 @@ function WorkerCard({ worker }: { worker: WorkerWithUser }) {
 }
 
 function CategoryChip({ label, active, onClick, icon: Icon, style }: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  icon?: typeof Search;
-  style?: { bg: string; text: string; border: string };
+  label: string; active: boolean; onClick: () => void; icon?: typeof Search; style?: { bg: string; text: string; border: string };
 }) {
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+      className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
         active
-          ? 'border-neon-emerald/40 bg-neon-emerald/10 text-neon-emeraldGlow shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-          : 'border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+          ? 'border-brass/25 bg-brass/10 text-brass shadow-[0_0_15px_rgba(197,160,89,0.08)]'
+          : 'border-white/[0.04] text-muted-dark hover:border-white/10 hover:text-muted-light'
       }`}
     >
-      {Icon && <Icon size={16} />}
+      {Icon && <Icon size={13} />}
       {label}
     </button>
   );

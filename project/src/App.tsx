@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
+import { BackgroundObjects } from '@/components/ui/BackgroundObjects';
 import { LandingPage } from '@/pages/LandingPage';
 import { SignupPage, LoginPage } from '@/pages/AuthPages';
 import { WorkersDirectoryPage } from '@/pages/WorkersDirectoryPage';
@@ -16,7 +17,8 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-base text-gray-100">
+        <div className="min-h-screen bg-base text-muted-light">
+          <BackgroundObjects />
           <Navbar />
           <Routes>
             <Route path="/" element={<LandingPage />} />

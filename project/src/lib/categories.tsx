@@ -15,18 +15,19 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Technician: MonitorSmartphone,
 };
 
+// Co-op palette: warm brass/sage tones — earthy, trustworthy, human
 export const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; glow: string }> = {
-  Electrician: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.2)]' },
-  Plumber: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', glow: 'shadow-[0_0_20px_rgba(59,130,246,0.2)]' },
-  Carpenter: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30', glow: 'shadow-[0_0_20px_rgba(249,115,22,0.2)]' },
-  Painter: { bg: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/30', glow: 'shadow-[0_0_20px_rgba(236,72,153,0.2)]' },
-  Cleaner: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', glow: 'shadow-[0_0_20px_rgba(6,182,212,0.2)]' },
-  Driver: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30', glow: 'shadow-[0_0_20px_rgba(239,68,68,0.2)]' },
-  Gardener: { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/30', glow: 'shadow-[0_0_20px_rgba(34,197,94,0.2)]' },
-  Caregiver: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.2)]' },
-  Technician: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30', glow: 'shadow-[0_0_20px_rgba(139,92,246,0.2)]' },
+  Electrician: { bg: 'bg-brass/[0.07]', text: 'text-brass', border: 'border-brass/15', glow: '' },
+  Plumber: { bg: 'bg-[#6b8db5]/[0.07]', text: 'text-[#6b8db5]', border: 'border-[#6b8db5]/15', glow: '' },
+  Carpenter: { bg: 'bg-[#d4a574]/[0.07]', text: 'text-[#d4a574]', border: 'border-[#d4a574]/15', glow: '' },
+  Painter: { bg: 'bg-[#c27a6e]/[0.07]', text: 'text-[#c27a6e]', border: 'border-[#c27a6e]/15', glow: '' },
+  Cleaner: { bg: 'bg-sage/[0.07]', text: 'text-sage', border: 'border-sage/15', glow: '' },
+  Driver: { bg: 'bg-[#b07070]/[0.07]', text: 'text-[#b07070]', border: 'border-[#b07070]/15', glow: '' },
+  Gardener: { bg: 'bg-sage/[0.07]', text: 'text-sage-light', border: 'border-sage/15', glow: '' },
+  Caregiver: { bg: 'bg-[#c4908a]/[0.07]', text: 'text-[#c4908a]', border: 'border-[#c4908a]/15', glow: '' },
+  Technician: { bg: 'bg-[#6b7eb5]/[0.07]', text: 'text-[#6b7eb5]', border: 'border-[#6b7eb5]/15', glow: '' },
 };
 
 export function getCategoryStyle(category: string) {
-  return CATEGORY_COLORS[category] ?? { bg: 'bg-white/5', text: 'text-gray-400', border: 'border-white/10', glow: '' };
+  return CATEGORY_COLORS[category] ?? { bg: 'bg-white/[0.04]', text: 'text-muted', border: 'border-white/6', glow: '' };
 }

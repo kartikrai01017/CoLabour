@@ -8,16 +8,16 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'gray', className = '' }: BadgeProps) {
   const variants: Record<string, string> = {
-    emerald: 'bg-neon-emerald/10 text-neon-emeraldGlow border-neon-emerald/30',
-    cyan: 'bg-neon-cyan/10 text-neon-cyanGlow border-neon-cyan/30',
-    violet: 'bg-neon-violet/10 text-neon-violetGlow border-neon-violet/30',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    red: 'bg-red-500/10 text-red-400 border-red-500/30',
-    gray: 'bg-white/5 text-gray-400 border-white/10',
+    emerald: 'bg-brass/10 text-brass border-brass/20 shadow-[0_0_10px_rgba(197,160,89,0.06)]',
+    cyan: 'bg-brass/10 text-brass border-brass/20 shadow-[0_0_10px_rgba(197,160,89,0.06)]',
+    violet: 'bg-sage/10 text-sage border-sage/20 shadow-[0_0_10px_rgba(124,154,107,0.06)]',
+    amber: 'bg-brass/10 text-brass border-brass/20 shadow-[0_0_10px_rgba(197,160,89,0.06)]',
+    red: 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.06)]',
+    gray: 'bg-white/[0.04] text-muted border-white/8',
   };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${variants[variant]} ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-0.5 text-[11px] font-medium backdrop-blur-sm ${variants[variant]} ${className}`}>
       {children}
     </span>
   );

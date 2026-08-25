@@ -1,4 +1,5 @@
-import { type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type ReactNode, useRef } from 'react';
+import { useMagnetic } from '@/components/ui/CursorEffect';
 
 interface NeonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -15,26 +16,33 @@ export function NeonButton({
   className = '',
   ...props
 }: NeonButtonProps) {
+  const magneticRef = useMagnetic(0.2);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
   const variants: Record<string, string> = {
-    emerald: 'bg-neon-emerald/10 text-neon-emeraldGlow border-neon-emerald/40 hover:bg-neon-emerald/20 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]',
-    cyan: 'bg-neon-cyan/10 text-neon-cyanGlow border-neon-cyan/40 hover:bg-neon-cyan/20 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]',
-    violet: 'bg-neon-violet/10 text-neon-violetGlow border-neon-violet/40 hover:bg-neon-violet/20 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]',
-    ghost: 'bg-transparent text-gray-300 border-white/10 hover:bg-white/5 hover:border-white/20',
-    danger: 'bg-red-500/10 text-red-400 border-red-500/40 hover:bg-red-500/20 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+    emerald: 'bg-gradient-to-r from-brass/15 to-brass/8 text-brass border-brass/20 hover:from-brass/25 hover:to-brass/12 hover:border-brass/35 hover:shadow-[0_0_20px_rgba(197,160,89,0.12)]',
+    cyan: 'bg-gradient-to-r from-brass/15 to-brass/8 text-brass border-brass/20 hover:from-brass/25 hover:to-brass/12 hover:border-brass/35 hover:shadow-[0_0_20px_rgba(197,160,89,0.12)]',
+    violet: 'bg-gradient-to-r from-sage/12 to-sage/6 text-sage border-sage/20 hover:from-sage/20 hover:to-sage/10 hover:border-sage/35 hover:shadow-[0_0_20px_rgba(124,154,107,0.12)]',
+    ghost: 'bg-white/[0.03] text-muted-light border-white/8 hover:bg-white/[0.06] hover:border-white/15 hover:text-white',
+    danger: 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30',
   };
 
   const sizes: Record<string, string> = {
-    sm: 'px-4 py-2 text-sm',
-    md: 'px-6 py-3 text-sm',
-    lg: 'px-8 py-4 text-base',
+    sm: 'px-4 py-1.5 text-xs',
+    md: 'px-5 py-2.5 text-sm',
+    lg: 'px-7 py-3 text-sm',
   };
 
   return (
-    <button
-      className={`relative inline-flex items-center justify-center gap-2 rounded-xl border font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
+    <div ref={magneticRef} className={`inline-block ${fullWidth ? 'w-full' : ''}`}>
+      <button
+        ref={btnRef}
+        className={`relative inline-flex items-center justify-center gap-2 rounded-xl border font-medium transition-all duration-400 disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+        style={{ transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)' }}
+        {...props}
+      >
+        <span className="relative z-10 flex items-center gap-2">{children}</span>
+      </button>
+    </div>
   );
 }

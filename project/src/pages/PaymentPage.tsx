@@ -8,14 +8,14 @@ import {
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
-import { GlowOrb } from '@/components/ui/Shared';
+import { FloatingShape } from '@/components/ui/Shared';
 import { supabase, type Booking, type Payment, type WorkerWithUser } from '@/lib/supabase';
 
 const UPI_APPS = [
-  { name: 'GPay', scheme: 'tez', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
-  { name: 'PhonePe', scheme: 'phonepe', color: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
-  { name: 'Paytm', scheme: 'paytmmp', color: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-  { name: 'BHIM', scheme: 'bhim', color: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
+  { name: 'GPay', scheme: 'tez', color: 'bg-white/[0.04]', text: 'text-blue-400', border: 'border-white/8' },
+  { name: 'PhonePe', scheme: 'phonepe', color: 'bg-white/[0.04]', text: 'text-purple-400', border: 'border-white/8' },
+  { name: 'Paytm', scheme: 'paytmmp', color: 'bg-white/[0.04]', text: 'text-cyan-400', border: 'border-white/8' },
+  { name: 'BHIM', scheme: 'bhim', color: 'bg-white/[0.04]', text: 'text-orange-400', border: 'border-white/8' },
 ];
 
 export function PaymentPage() {
@@ -49,7 +49,6 @@ export function PaymentPage() {
       .maybeSingle();
     setWorker(workerData as unknown as WorkerWithUser | null);
 
-    // Check for existing payment
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('*')
@@ -59,7 +58,6 @@ export function PaymentPage() {
     if (existingPayment) {
       setPayment(existingPayment as Payment);
     } else if (workerData && bookingData) {
-      // Create payment record with UPI URI
       const wp = workerData as unknown as WorkerWithUser;
       const amount = (bookingData as Booking).total_amount;
       const bookingId = (bookingData as Booking).id;
@@ -89,21 +87,12 @@ export function PaymentPage() {
     setLoading(false);
   }, [id]);
 
-  useEffect(() => {
-    fetchBookingData();
-  }, [fetchBookingData]);
+  useEffect(() => { fetchBookingData(); }, [fetchBookingData]);
 
-  // Polling engine
   useEffect(() => {
     if (!payment || payment.status === 'paid') return;
-
     const poll = async () => {
-      const { data } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('id', payment.id)
-        .maybeSingle();
-
+      const { data } = await supabase.from('payments').select('*').eq('id', payment.id).maybeSingle();
       if (data) {
         const updated = data as Payment;
         setPayment(updated);
@@ -114,48 +103,28 @@ export function PaymentPage() {
         }
       }
     };
-
     pollingRef.current = setInterval(poll, 2500);
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [payment, navigate]);
 
   const handleConfirmPayment = async () => {
-    if (!utrNumber || utrNumber.length < 8) {
-      setError('Please enter a valid UTR / Reference number');
-      return;
-    }
+    if (!utrNumber || utrNumber.length < 8) { setError('Please enter a valid UTR / Reference number'); return; }
     if (!payment) return;
-
-    setSubmitting(true);
-    setError('');
-
+    setSubmitting(true); setError('');
     try {
       const { data, error: updateError } = await supabase
         .from('payments')
         .update({ utr_number: utrNumber, status: 'payment_submitted' })
-        .eq('id', payment.id)
-        .select()
-        .single();
-
+        .eq('id', payment.id).select().single();
       if (updateError) throw updateError;
       setPayment(data as Payment);
-
-      // Also update booking status
       await supabase.from('bookings').update({ status: 'payment_submitted' }).eq('id', booking?.id);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to confirm payment';
-      setError(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to confirm payment'); }
+    finally { setSubmitting(false); }
   };
 
   const handleCopyUpiId = () => {
-    if (worker?.upi_id) {
-      navigator.clipboard.writeText(worker.upi_id);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    if (worker?.upi_id) { navigator.clipboard.writeText(worker.upi_id); setCopied(true); setTimeout(() => setCopied(false), 2000); }
   };
 
   const handleUpiApp = (scheme: string) => {
@@ -164,88 +133,70 @@ export function PaymentPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center pt-16">
-        <Loader2 size={32} className="animate-spin text-neon-emerald" />
-      </div>
-    );
-  }
-
-  if (!booking || !payment || !worker) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
-        <p className="text-gray-400">Booking or payment not found.</p>
-        <Link to="/customer/dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex min-h-screen items-center justify-center pt-16"><Loader2 size={28} className="animate-spin text-brass" /></div>;
+  if (!booking || !payment || !worker) return (
+    <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
+      <p className="text-muted">Booking or payment not found.</p>
+      <Link to="/customer/dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
+    </div>
+  );
 
   const isPaid = payment.status === 'paid';
   const isSubmitted = payment.status === 'payment_submitted';
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
-      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/15" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
+    <div className="relative min-h-screen overflow-hidden pt-20 pb-12 atmosphere">
+      <FloatingShape className="top-20 -left-20 h-[350px] w-[350px] animate-drift-slow" color="neon-cyan" />
+      <FloatingShape className="bottom-0 -right-20 h-[300px] w-[300px] animate-drift" color="neon-purple" delay={2} />
 
       {showSuccess && <SuccessModal amount={payment.amount} />}
 
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <Link to="/customer/dashboard" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emeraldGlow transition-colors">
-          <ArrowLeft size={16} /> Back to Dashboard
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 relative z-10">
+        <Link to="/customer/dashboard" className="mb-5 inline-flex items-center gap-1.5 text-sm text-muted hover:text-brass transition-colors duration-300">
+          <ArrowLeft size={14} /> Back to Dashboard
         </Link>
 
-        <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-3xl font-bold gradient-text-emerald-cyan">Payment Gateway</h1>
-          <p className="mt-2 text-gray-400">Complete your payment securely via UPI</p>
+        <div className="mb-7 text-center animate-fade-in">
+          <h1 className="text-2xl font-bold gradient-text">Payment Gateway</h1>
+          <p className="mt-1.5 text-muted">Complete your payment securely via UPI</p>
         </div>
 
-        {/* Amount card */}
-        <GlassCard className="mb-6 p-6 text-center">
-          <p className="text-sm text-gray-400 mb-1">Amount to Pay</p>
-          <p className="text-5xl font-bold gradient-text-emerald-cyan">₹{payment.amount.toFixed(2)}</p>
-          <div className="mt-3 flex items-center justify-center gap-2">
-            <Badge variant={isPaid ? 'emerald' : isSubmitted ? 'amber' : 'cyan'}>
-              {isPaid ? <><Check size={12} /> Paid</> : isSubmitted ? <><Clock size={12} /> Awaiting Confirmation</> : <><Clock size={12} /> Pending</>}
+        <GlassCard className="mb-5 p-5 text-center">
+          <p className="text-xs text-muted mb-1">Amount to Pay</p>
+          <p className="text-4xl font-bold gradient-text">₹{payment.amount.toFixed(2)}</p>
+          <div className="mt-2.5 flex items-center justify-center gap-2">
+            <Badge variant={isPaid ? 'emerald' : isSubmitted ? 'amber' : 'gray'}>
+              {isPaid ? <><Check size={11} /> Paid</> : isSubmitted ? <><Clock size={11} /> Awaiting Confirmation</> : <><Clock size={11} /> Pending</>}
             </Badge>
           </div>
         </GlassCard>
 
-        {/* QR Code */}
         {!isPaid && (
-          <GlassCard className="mb-6 p-8">
-            <h2 className="mb-4 text-center text-lg font-semibold text-gray-200">Scan to Pay</h2>
-            <div className="flex justify-center mb-4">
-              <div className="rounded-2xl bg-white p-4 inline-block">
-                {payment.upi_uri && <QRCodeCanvas value={payment.upi_uri} size={200} level="H" includeMargin={false} />}
+          <GlassCard className="mb-5 p-7">
+            <h2 className="mb-3.5 text-center text-base font-semibold text-white">Scan to Pay</h2>
+            <div className="flex justify-center mb-3.5">
+              <div className="rounded-xl bg-white p-3.5 inline-block shadow-depth">
+                {payment.upi_uri && <QRCodeCanvas value={payment.upi_uri} size={180} level="H" includeMargin={false} />}
               </div>
             </div>
-            <p className="text-center text-sm text-gray-400 mb-2">Scan with any UPI app to pay</p>
-
-            {/* UPI ID display */}
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <div className="rounded-xl border border-white/10 bg-base-800 px-4 py-2 text-sm">
-                <span className="text-gray-400">UPI ID: </span>
-                <span className="font-mono text-neon-cyanGlow">{worker.upi_id}</span>
+            <p className="text-center text-xs text-muted mb-2">Scan with any UPI app to pay</p>
+            <div className="flex items-center justify-center gap-1.5 mt-3.5">
+              <div className="rounded-lg border border-white/[0.06] bg-base-800 px-3 py-1.5 text-xs">
+                <span className="text-muted">UPI ID: </span>
+                <span className="font-mono text-brass text-shadow-neon">{worker.upi_id}</span>
               </div>
-              <button onClick={handleCopyUpiId} className="rounded-lg border border-white/10 p-2 text-gray-400 hover:text-neon-emerald hover:border-neon-emerald/30 transition-all">
-                {copied ? <Check size={16} className="text-neon-emerald" /> : <Copy size={16} />}
+              <button onClick={handleCopyUpiId} className="rounded-lg border border-white/[0.06] p-1.5 text-muted hover:text-brass hover:border-brass/20 transition-all duration-300">
+                {copied ? <Check size={14} className="text-brass" /> : <Copy size={14} />}
               </button>
             </div>
-
-            {/* UPI App deep links */}
-            <div className="mt-6">
-              <p className="mb-3 text-center text-sm text-gray-400">Or pay directly via:</p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-5">
+              <p className="mb-2.5 text-center text-xs text-muted-dark">Or pay directly via:</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {UPI_APPS.map((app) => (
-                  <button
-                    key={app.name}
-                    onClick={() => handleUpiApp(app.scheme)}
-                    className={`flex flex-col items-center gap-2 rounded-xl border ${app.color} ${app.border} p-3 transition-all hover:scale-105`}
-                  >
-                    <Smartphone size={24} className={app.text} />
-                    <span className={`text-xs font-medium ${app.text}`}>{app.name}</span>
+                  <button key={app.name} onClick={() => handleUpiApp(app.scheme)}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border ${app.color} ${app.border} p-2.5 transition-all duration-300 hover:bg-white/[0.06] hover:shadow-lg`}>
+                    <Smartphone size={20} className={app.text} />
+                    <span className={`text-[11px] font-medium ${app.text}`}>{app.name}</span>
                   </button>
                 ))}
               </div>
@@ -253,79 +204,81 @@ export function PaymentPage() {
           </GlassCard>
         )}
 
-        {/* UTR Confirmation */}
         {!isPaid && (
-          <GlassCard className="mb-6 p-6">
-            <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <ShieldCheck size={18} className="text-neon-emerald" /> Confirm Payment
+          <GlassCard className="mb-5 p-5">
+            <h2 className="mb-1.5 flex items-center gap-2 text-base font-semibold text-white">
+              <ShieldCheck size={16} className="text-brass" /> Confirm Payment
             </h2>
-            <p className="mb-4 text-sm text-gray-400">
+            <p className="mb-3.5 text-xs text-muted">
               After paying in your UPI app, enter the 12-digit UPI Reference / UTR number from your payment confirmation and click below.
             </p>
 
             {isSubmitted ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-                  <div className="relative">
-                    <Clock size={20} className="text-amber-400 animate-pulse" />
-                  </div>
+              <div className="space-y-3.5">
+                <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/15 bg-amber-500/5 px-3.5 py-2.5">
+                  <Clock size={18} className="text-amber-400 animate-pulse" />
                   <div>
-                    <p className="text-sm font-medium text-amber-400">Payment Submitted - Awaiting Confirmation</p>
-                    <p className="text-xs text-gray-400 mt-1">UTR: {payment.utr_number}</p>
-                    <p className="text-xs text-gray-500 mt-1">The worker will confirm receipt shortly. This page will update automatically.</p>
+                    <p className="text-xs font-medium text-amber-400">Payment Submitted - Awaiting Confirmation</p>
+                    <p className="text-[11px] text-muted mt-0.5">UTR: {payment.utr_number}</p>
+                    <p className="text-[11px] text-muted-dark mt-0.5">The worker will confirm receipt shortly. This page will update automatically.</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                  <RefreshCw size={14} className="animate-spin" /> Polling for confirmation...
+                <div className="flex items-center justify-center gap-1.5 text-xs text-muted">
+                  <RefreshCw size={12} className="animate-spin" /> Polling for confirmation...
                 </div>
               </div>
             ) : (
               <>
-                <div className="mb-4">
-                  <label className="mb-1.5 block text-sm font-medium text-gray-300">UPI Reference / UTR Number</label>
-                  <input
-                    value={utrNumber}
-                    onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                    placeholder="Enter 12-digit UTR"
-                    className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-3 text-center font-mono text-lg tracking-wider text-gray-200 outline-none transition-all focus:border-neon-emerald/40 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
-                    maxLength={12}
-                  />
+                <div className="mb-3.5">
+                  <label className="mb-1 block text-sm font-medium text-muted-light">UPI Reference / UTR Number</label>
+                  <input value={utrNumber} onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                    placeholder="Enter 12-digit UTR" className="utr-input" maxLength={12} />
                 </div>
-
                 {error && (
-                  <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                    <AlertCircle size={16} /> {error}
+                  <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/8 px-3.5 py-2.5 text-sm text-red-400">
+                    <AlertCircle size={14} /> {error}
                   </div>
                 )}
-
                 <NeonButton fullWidth size="lg" onClick={handleConfirmPayment} disabled={submitting}>
-                  {submitting ? <><Loader2 size={18} className="animate-spin" /> Confirming...</> : <>Confirm Payment <ArrowRight size={18} /></>}
+                  {submitting ? <><Loader2 size={16} className="animate-spin" /> Confirming...</> : <>Confirm Payment <ArrowRight size={16} /></>}
                 </NeonButton>
               </>
             )}
           </GlassCard>
         )}
 
-        {/* Paid state */}
         {isPaid && (
-          <GlassCard className="p-8 text-center">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-neon-emerald/20">
-              <Check size={40} className="text-neon-emeraldGlow" />
+          <GlassCard className="p-7 text-center">
+            <div className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-brass/15 shadow-brass">
+              <Check size={32} className="text-brass" />
             </div>
-            <h2 className="text-2xl font-bold text-white">Payment Complete</h2>
-            <p className="mt-2 text-gray-400">Your booking has been confirmed and paid.</p>
-            <Link to="/customer/dashboard" className="mt-6 inline-block">
-              <NeonButton variant="emerald">Go to My Bookings <ArrowRight size={18} /></NeonButton>
+            <h2 className="text-xl font-bold text-white">Payment Complete</h2>
+            <p className="mt-1.5 text-sm text-muted">Your booking has been confirmed and paid.</p>
+            <Link to="/customer/dashboard" className="mt-5 inline-block">
+              <NeonButton variant="emerald">Go to My Bookings <ArrowRight size={16} /></NeonButton>
             </Link>
           </GlassCard>
         )}
 
-        {/* Security note */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
-          <ShieldCheck size={14} className="text-neon-emerald" />
-          CoLabour never asks for your UPI PIN, password, or card details. Payments are made directly in your UPI app.
+        <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-muted-dark">
+          <ShieldCheck size={12} className="text-brass/60" />
+          CoLabour never asks for your UPI PIN, password, or card details.
         </div>
       </div>
+
+      <style>{`
+        .utr-input {
+          width: 100%; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.04);
+          background: rgba(5,5,8,0.8); padding: 0.625rem 0.875rem; text-align: center;
+          font-family: 'JetBrains Mono', monospace; font-size: 1rem; letter-spacing: 0.1em;
+          color: #c4c4d4; outline: none; transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .utr-input:focus {
+          border-color: rgba(0,240,255,0.3);
+          box-shadow: 0 0 0 3px rgba(0,240,255,0.06), 0 0 20px rgba(0,240,255,0.05);
+        }
+        .utr-input::placeholder { color: #5a5a70; letter-spacing: 0; font-size: 0.875rem; }
+      `}</style>
     </div>
   );
 }
@@ -334,55 +287,42 @@ function SuccessModal({ amount }: { amount: number }) {
   const [pieces, setPieces] = useState<{ left: number; delay: number; color: string; duration: number }[]>([]);
 
   useEffect(() => {
-    const colors = ['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#EF4444', '#22D3EE'];
-    const newPieces = Array.from({ length: 60 }, (_, i) => ({
+    const colors = ['#c5a059', '#7c9a6b', '#7589b0', '#c27a6e', '#d4a574'];
+    setPieces(Array.from({ length: 40 }, (_, i) => ({
       left: Math.random() * 100,
       delay: Math.random() * 0.5,
       color: colors[i % colors.length],
       duration: 1 + Math.random() * 1.5,
-    }));
-    setPieces(newPieces);
+    })));
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-base-900/80 backdrop-blur-md animate-fade-in">
-      {/* Confetti */}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-base/90 backdrop-blur-md animate-fade-in">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {pieces.map((p, i) => (
-          <div
-            key={i}
-            className="absolute top-0 h-3 w-3 rounded-sm"
-            style={{
-              left: `${p.left}%`,
-              backgroundColor: p.color,
-              animation: `confetti ${p.duration}s ease-out ${p.delay}s forwards`,
-            }}
-          />
+          <div key={i} className="absolute top-0 h-2 w-2 rounded-sm"
+            style={{ left: `${p.left}%`, backgroundColor: p.color, animation: `confetti ${p.duration}s ease-out ${p.delay}s forwards` }} />
         ))}
       </div>
-
       <div className="relative z-10 text-center animate-scale-in">
-        {/* 3D Checkmark */}
-        <div className="relative mx-auto mb-8 perspective-1000">
-          <div className="relative h-32 w-32">
-            <div className="absolute inset-0 rounded-full bg-neon-emerald/20 animate-ping" />
-            <div className="absolute inset-0 rounded-full bg-neon-emerald/30 animate-pulse-glow" />
-            <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-neon-emerald to-neon-cyan shadow-[0_0_60px_rgba(16,185,129,0.5)]">
-              <svg viewBox="0 0 52 52" className="h-16 w-16 text-white" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+        <div className="relative mx-auto mb-6 perspective-1000">
+          <div className="relative h-24 w-24">
+            <div className="absolute inset-0 rounded-full bg-brass/10 animate-ping" />
+            <div className="absolute inset-0 rounded-full bg-brass/20 animate-pulse-glow" />
+            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-brass to-sage shadow-brass">
+              <svg viewBox="0 0 52 52" className="h-12 w-12 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 27 L22 35 L38 18" className="animate-[fadeIn_0.5s_ease-out_0.2s_both]" />
               </svg>
             </div>
           </div>
         </div>
-
-        <h2 className="text-4xl font-bold gradient-text-emerald-cyan mb-2">Payment Successful!</h2>
-        <p className="text-xl text-gray-300 mb-2">₹{amount.toFixed(2)} has been paid</p>
-        <p className="text-sm text-gray-500 mb-6 flex items-center justify-center gap-2">
-          <PartyPopper size={18} className="text-neon-violet" /> Redirecting to your bookings...
+        <h2 className="text-2xl font-bold gradient-text mb-1.5">Payment Successful!</h2>
+        <p className="text-base text-muted-light mb-1.5">₹{amount.toFixed(2)} has been paid</p>
+        <p className="text-xs text-muted-dark mb-5 flex items-center justify-center gap-1.5">
+          <PartyPopper size={14} className="text-sage" /> Redirecting to your bookings...
         </p>
-
-        <div className="flex items-center justify-center gap-2 text-sm text-neon-emerald">
-          <Zap size={16} className="animate-pulse" /> Booking Confirmed
+        <div className="flex items-center justify-center gap-1.5 text-xs text-brass text-shadow-neon">
+          <Zap size={14} className="animate-pulse" /> Booking Confirmed
         </div>
       </div>
     </div>

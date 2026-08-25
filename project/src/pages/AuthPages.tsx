@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Wrench, ArrowRight, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
-import { GlowOrb } from '@/components/ui/Shared';
+import { GlowOrb, FloatingShape } from '@/components/ui/Shared';
 import { supabase, CATEGORIES } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
@@ -90,28 +90,27 @@ export function SignupPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-24 pb-12">
-      <GlowOrb className="top-20 -left-20 h-96 w-96 bg-neon-emerald/15" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
+    <div className="relative min-h-screen overflow-hidden pt-24 pb-12 atmosphere">
+      <FloatingShape className="top-20 -left-20 h-[400px] w-[400px] animate-drift-slow" color="neon-cyan" />
+      <FloatingShape className="bottom-0 -right-20 h-[350px] w-[350px] animate-drift" color="neon-purple" delay={2} />
 
-      <div className="mx-auto max-w-2xl px-4 sm:px-6">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 relative z-10">
         <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Join CoLabour</h1>
-          <p className="mt-2 text-gray-400">Create your account and start your journey</p>
+          <h1 className="text-3xl font-bold gradient-text">Join CoLabour</h1>
+          <p className="mt-2 text-muted">Create your account and start your journey</p>
         </div>
 
-        <GlassCard className="p-8 animate-slide-up">
-          {/* Role toggle */}
-          <div className="mb-6">
-            <label className="mb-3 block text-sm font-medium text-gray-300">I want to join as a</label>
-            <div className="grid grid-cols-2 gap-3">
+        <GlassCard className="p-7 animate-slide-up">
+          <div className="mb-5">
+            <label className="mb-2.5 block text-sm font-medium text-muted-light">I want to join as a</label>
+            <div className="grid grid-cols-2 gap-2.5">
               <RoleButton active={role === 'customer'} onClick={() => setRole('customer')} icon={User} label="Customer" desc="Hire workers" />
               <RoleButton active={role === 'worker'} onClick={() => setRole('worker')} icon={Wrench} label="Worker" desc="Offer services" />
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <div className="grid gap-3.5 sm:grid-cols-2">
               <Field label="Full Name" required>
                 <input value={name} onChange={(e) => setName(e.target.value)} required className="input-field" placeholder="John Doe" />
               </Field>
@@ -129,11 +128,11 @@ export function SignupPage() {
             </Field>
 
             {role === 'worker' && (
-              <div className="space-y-4 border-t border-white/5 pt-4 animate-fade-in">
-                <h3 className="text-sm font-semibold text-neon-cyanGlow">Worker Profile Details</h3>
+              <div className="space-y-3.5 border-t border-white/[0.04] pt-4 animate-fade-in">
+                <h3 className="text-sm font-semibold text-brass text-shadow-neon">Worker Profile Details</h3>
 
                 <Field label="Category" required>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                     {CATEGORIES.map((cat) => {
                       const Icon = CATEGORY_ICONS[cat] ?? User;
                       const style = getCategoryStyle(cat);
@@ -142,10 +141,10 @@ export function SignupPage() {
                           key={cat}
                           type="button"
                           onClick={() => setCategory(cat)}
-                          className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-xs transition-all ${category === cat ? `${style.bg} ${style.border} ${style.glow}` : 'border-white/10 hover:border-white/20'}`}
+                          className={`flex flex-col items-center gap-0.5 rounded-xl border p-1.5 text-[10px] transition-all duration-300 ${category === cat ? `${style.bg} ${style.border} shadow-lg` : 'border-white/[0.04] hover:border-white/10'}`}
                         >
-                          <Icon size={18} className={category === cat ? style.text : 'text-gray-500'} />
-                          <span className={category === cat ? style.text : 'text-gray-500'}>{cat.slice(0, 6)}</span>
+                          <Icon size={14} className={category === cat ? style.text : 'text-muted-dark'} />
+                          <span className={category === cat ? style.text : 'text-muted-dark'}>{cat.slice(0, 6)}</span>
                         </button>
                       );
                     })}
@@ -156,7 +155,7 @@ export function SignupPage() {
                   <input value={upiId} onChange={(e) => setUpiId(e.target.value)} required className="input-field" placeholder="yourname@upi" />
                 </Field>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:grid-cols-2">
                   <Field label="Hourly Rate (₹)">
                     <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="input-field" placeholder="350" min="0" />
                   </Field>
@@ -170,25 +169,25 @@ export function SignupPage() {
                 </Field>
 
                 <Field label="Bio">
-                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="input-field min-h-[80px] resize-none" placeholder="Tell customers about your experience..." />
+                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="input-field min-h-[72px] resize-none" placeholder="Tell customers about your experience..." />
                 </Field>
               </div>
             )}
 
             {error && (
-              <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                <AlertCircle size={16} /> {error}
+              <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/8 px-3.5 py-2.5 text-sm text-red-400">
+                <AlertCircle size={14} /> {error}
               </div>
             )}
 
             <NeonButton type="submit" fullWidth size="lg" disabled={loading}>
-              {loading ? <><Loader2 size={18} className="animate-spin" /> Creating account...</> : <>Create Account <ArrowRight size={18} /></>}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Creating account...</> : <>Create Account <ArrowRight size={16} /></>}
             </NeonButton>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-400">
+          <p className="mt-5 text-center text-sm text-muted">
             Already have an account?{' '}
-            <Link to="/login" className="text-neon-emeraldGlow hover:underline">Sign in</Link>
+            <Link to="/login" className="text-brass hover:underline text-shadow-neon">Sign in</Link>
           </p>
         </GlassCard>
       </div>
@@ -197,19 +196,19 @@ export function SignupPage() {
         .input-field {
           width: 100%;
           border-radius: 0.75rem;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(11,15,25,0.6);
-          padding: 0.625rem 1rem;
-          color: #e5e7eb;
+          border: 1px solid rgba(255,255,255,0.04);
+          background: rgba(5,5,8,0.8);
+          padding: 0.5rem 0.75rem;
+          color: #c4c4d4;
           font-size: 0.875rem;
           outline: none;
-          transition: all 0.2s;
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         .input-field:focus {
-          border-color: rgba(16,185,129,0.4);
-          box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
+          border-color: rgba(0,240,255,0.3);
+          box-shadow: 0 0 0 3px rgba(0,240,255,0.06), 0 0 20px rgba(0,240,255,0.05);
         }
-        .input-field::placeholder { color: #6b7280; }
+        .input-field::placeholder { color: #5a5a70; }
       `}</style>
     </div>
   );
@@ -267,18 +266,18 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-24 pb-12 flex items-center">
-      <GlowOrb className="top-20 right-0 h-96 w-96 bg-neon-cyan/15" />
-      <GlowOrb className="bottom-0 -left-20 h-80 w-80 bg-neon-emerald/10" />
+    <div className="relative min-h-screen overflow-hidden pt-24 pb-12 flex items-center atmosphere">
+      <FloatingShape className="top-20 -right-20 h-[400px] w-[400px] animate-drift-slow" color="neon-purple" />
+      <FloatingShape className="bottom-0 -left-20 h-[350px] w-[350px] animate-drift" color="neon-cyan" delay={1} />
 
-      <div className="mx-auto max-w-md w-full px-4 sm:px-6">
+      <div className="mx-auto max-w-md w-full px-4 sm:px-6 relative z-10">
         <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Welcome Back</h1>
-          <p className="mt-2 text-gray-400">Sign in to your CoLabour account</p>
+          <h1 className="text-3xl font-bold gradient-text">Welcome Back</h1>
+          <p className="mt-2 text-muted">Sign in to your CoLabour account</p>
         </div>
 
-        <GlassCard className="p-8 animate-slide-up">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <GlassCard className="p-7 animate-slide-up">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <Field label="Email" required>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="input-field" placeholder="you@example.com" />
             </Field>
@@ -289,40 +288,40 @@ export function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input-field pr-10"
+                  className="input-field pr-9"
                   placeholder="Your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-dark hover:text-brass transition-colors duration-300"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </Field>
 
             <div className="flex justify-end">
-              <Link to="/signup" className="text-xs text-gray-400 hover:text-neon-emeraldGlow transition-colors">
+              <Link to="/signup" className="text-xs text-muted-dark hover:text-brass transition-colors duration-300">
                 Forgot password?
               </Link>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                <AlertCircle size={16} /> {error}
+              <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/8 px-3.5 py-2.5 text-sm text-red-400">
+                <AlertCircle size={14} /> {error}
               </div>
             )}
 
             <NeonButton type="submit" fullWidth size="lg" disabled={loading}>
-              {loading ? <><Loader2 size={18} className="animate-spin" /> Signing in...</> : <>Sign In <ArrowRight size={18} /></>}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in...</> : <>Sign In <ArrowRight size={16} /></>}
             </NeonButton>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-400">
+          <p className="mt-5 text-center text-sm text-muted">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-neon-emeraldGlow hover:underline">Sign up</Link>
+            <Link to="/signup" className="text-brass hover:underline text-shadow-neon">Sign up</Link>
           </p>
         </GlassCard>
       </div>
@@ -331,19 +330,19 @@ export function LoginPage() {
         .input-field {
           width: 100%;
           border-radius: 0.75rem;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(11,15,25,0.6);
-          padding: 0.625rem 1rem;
-          color: #e5e7eb;
+          border: 1px solid rgba(255,255,255,0.04);
+          background: rgba(5,5,8,0.8);
+          padding: 0.5rem 0.75rem;
+          color: #c4c4d4;
           font-size: 0.875rem;
           outline: none;
-          transition: all 0.2s;
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         .input-field:focus {
-          border-color: rgba(16,185,129,0.4);
-          box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
+          border-color: rgba(0,240,255,0.3);
+          box-shadow: 0 0 0 3px rgba(0,240,255,0.06), 0 0 20px rgba(0,240,255,0.05);
         }
-        .input-field::placeholder { color: #6b7280; }
+        .input-field::placeholder { color: #5a5a70; }
       `}</style>
     </div>
   );
@@ -354,14 +353,14 @@ function RoleButton({ active, onClick, icon: Icon, label, desc }: { active: bool
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-xl border p-4 transition-all ${active ? 'border-neon-emerald/40 bg-neon-emerald/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'border-white/10 hover:border-white/20'}`}
+      className={`flex items-center gap-2.5 rounded-xl border p-3 transition-all duration-300 ${active ? 'border-brass/25 bg-brass/[0.06] shadow-brass' : 'border-white/[0.04] hover:border-white/10'}`}
     >
-      <div className={`rounded-lg p-2 ${active ? 'bg-neon-emerald/20' : 'bg-white/5'}`}>
-        <Icon size={20} className={active ? 'text-neon-emeraldGlow' : 'text-gray-400'} />
+      <div className={`rounded-lg p-1.5 ${active ? 'bg-brass/10' : 'bg-white/[0.03]'}`}>
+        <Icon size={16} className={active ? 'text-brass' : 'text-muted-dark'} />
       </div>
       <div className="text-left">
-        <p className={`font-semibold ${active ? 'text-white' : 'text-gray-300'}`}>{label}</p>
-        <p className="text-xs text-gray-500">{desc}</p>
+        <p className={`text-sm font-semibold ${active ? 'text-white' : 'text-muted-light'}`}>{label}</p>
+        <p className="text-[11px] text-muted-dark">{desc}</p>
       </div>
     </button>
   );
@@ -370,8 +369,8 @@ function RoleButton({ active, onClick, icon: Icon, label, desc }: { active: bool
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-gray-300">
-        {label} {required && <span className="text-neon-emerald">*</span>}
+      <label className="mb-1 block text-sm font-medium text-muted-light">
+        {label} {required && <span className="text-brass">*</span>}
       </label>
       {children}
     </div>
