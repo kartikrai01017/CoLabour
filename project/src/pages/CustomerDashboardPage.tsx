@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Calendar, MapPin, Wallet, Clock, Loader2, ArrowRight, Briefcase, CheckCircle,
   Receipt, TrendingUp, AlertCircle,
@@ -22,7 +22,6 @@ interface PaymentWithBooking extends Payment {
 
 export function CustomerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingWithWorker[]>([]);
   const [payments, setPayments] = useState<PaymentWithBooking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,11 +49,8 @@ export function CustomerDashboardPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate('/login'); return; }
-    if (user.role === 'worker') { navigate('/worker/dashboard'); return; }
-    if (user.role === 'admin') { navigate('/admin'); return; }
-    fetchData();
-  }, [user, authLoading, navigate, fetchData]);
+    if (user) fetchData();
+  }, [user, authLoading, fetchData]);
 
   // Poll for status updates
   useEffect(() => {

@@ -56,14 +56,12 @@ export function WorkerDashboardPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate('/login'); return; }
-    if (user.role !== 'worker') { navigate('/customer/dashboard'); return; }
     if (workerProfile) {
       setUpiId(workerProfile.upi_id);
       setHourlyRate(String(workerProfile.hourly_rate));
       fetchData();
     }
-  }, [user, workerProfile, authLoading, navigate, fetchData]);
+  }, [workerProfile, authLoading, fetchData]);
 
   // Poll for new bookings/payments
   useEffect(() => {

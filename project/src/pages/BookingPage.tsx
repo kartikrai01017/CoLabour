@@ -28,10 +28,6 @@ export function BookingPage() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     async function fetchWorker() {
       if (!id) return;
       const { data } = await supabase
@@ -43,7 +39,7 @@ export function BookingPage() {
       setLoading(false);
     }
     fetchWorker();
-  }, [id, user, navigate]);
+  }, [id]);
 
   const totalAmount = worker ? (worker.hourly_rate * parseFloat(hours || '0')) : 0;
 
