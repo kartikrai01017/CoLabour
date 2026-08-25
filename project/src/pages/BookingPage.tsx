@@ -1,108 +1,129 @@
-import { useState, useEffect, type FormEvent } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  Calendar, MapPin, Clock, ArrowLeft, ArrowRight, Loader2, AlertCircle, Navigation, Check,
-} from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Calendar, Clock, MapPin, AlertCircle, Loader2, ArrowLeft, Briefcase, IndianRupee, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { GlowOrb } from '@/components/ui/Shared';
-import { supabase, type WorkerWithUser } from '@/lib/supabase';
+import { supabase, type WorkerProfile } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
+
+interface WorkerWithUser extends WorkerProfile {
+  users?: { name: string; email: string; phone?: string } | null;
+}
 
 export function BookingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+
+  // Rapido style waiting screen states
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'waiting' | 'accepted' | 'rejected'>('idle');
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [hours, setHours] = useState('1');
+  const [hours, setHours] = useState(2);
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const pollIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     async function fetchWorker() {
       if (!id) return;
-      const { data } = await supabase
-        .from('worker_profiles')
-        .select('*, users!inner(name, email, phone)')
-        .eq('id', id)
-        .maybeSingle();
-      setWorker(data as unknown as WorkerWithUser | null);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('worker_profiles')
+          .select('*, users:user_id(name, email, phone)')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        setWorker(data as unknown as WorkerWithUser);
+      } catch (err) {
+        console.error('Error fetching worker:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchWorker();
   }, [id]);
 
-  const totalAmount = worker ? (worker.hourly_rate * parseFloat(hours || '0')) : 0;
+  // Live polling for worker response (Accept / Reject)
+  useEffect(() => {
+    if (!createdBookingId || requestStatus !== 'waiting') return;
 
-  const handleUseMyLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          if (!address) setAddress(`Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`);
-        },
-        () => setError('Could not get your location. Please enter address manually.')
-      );
-    } else {
-      setError('Geolocation is not supported on this device.');
-    }
-  };
+    pollIntervalRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from('bookings')
+        .select('status')
+        .eq('id', createdBookingId)
+        .single();
 
-  const handleSubmit = async (e: FormEvent) => {
+      if (data) {
+        if (data.status === 'confirmed') {
+          setRequestStatus('accepted');
+          clearInterval(pollIntervalRef.current);
+          setTimeout(() => navigate('/customer-dashboard'), 2000);
+        } else if (data.status === 'cancelled') {
+          setRequestStatus('rejected');
+          clearInterval(pollIntervalRef.current);
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(pollIntervalRef.current);
+  }, [createdBookingId, requestStatus, navigate]);
+
+  const totalAmount = worker ? Number(worker.hourly_rate) * hours : 0;
+
+  const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!user || !worker) return;
-    if (!date || !time || !address) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    const scheduledAt = new Date(`${date}T${time}`);
-    if (scheduledAt < new Date()) {
-      setError('Scheduled time must be in the future');
-      return;
-    }
+    if (!user) { navigate('/login'); return; }
+    if (!date || !time || !address) { setErrorMsg('Date, Time aur Address bharein.'); return; }
 
     setSubmitting(true);
+    setErrorMsg('');
 
     try {
-      const { data: booking, error: bookingError } = await supabase
+      const scheduledAt = new Date(`${date}T${time}`).toISOString();
+      const { data, error } = await supabase
         .from('bookings')
-        .insert({
-          customer_id: user.id,
-          worker_id: worker.id,
-          category: worker.category,
-          scheduled_at: scheduledAt.toISOString(),
-          address,
-          total_amount: totalAmount,
-          status: 'pending',
-          notes,
-        })
+        .insert([
+          {
+            customer_id: user.id,
+            worker_id: worker?.id,
+            category: worker?.category,
+            address,
+            notes: notes || null,
+            scheduled_at: scheduledAt,
+            total_amount: totalAmount,
+            hours,
+            status: 'pending',
+          }
+        ])
         .select()
         .single();
 
-      if (bookingError) throw bookingError;
+      if (error) throw error;
 
-      navigate(`/payment/${booking.id}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create booking';
-      setError(msg);
+      setCreatedBookingId(data.id);
+      setRequestStatus('waiting');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Request bhejne me error aayi.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16">
         <Loader2 size={32} className="animate-spin text-neon-emerald" />
@@ -113,185 +134,197 @@ export function BookingPage() {
   if (!worker) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
-        <p className="text-gray-400">Worker not found.</p>
-        <Link to="/workers"><NeonButton variant="ghost">Browse Workers</NeonButton></Link>
+        <AlertCircle className="text-red-400" size={32} />
+        <p className="text-gray-400">Worker profile nahi mili.</p>
+        <NeonButton onClick={() => navigate('/workers')}>Browse Workers</NeonButton>
       </div>
     );
   }
 
-  const Icon = CATEGORY_ICONS[worker.category] ?? Calendar;
+  const Icon = CATEGORY_ICONS[worker.category] ?? Briefcase;
   const style = getCategoryStyle(worker.category);
 
   return (
     <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
-      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
+      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-violet/10" />
+      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-emerald/10" />
 
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <Link to={`/workers/${id}`} className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emeraldGlow transition-colors">
-          <ArrowLeft size={16} /> Back to Profile
-        </Link>
-
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold gradient-text-emerald-cyan">Book Your Appointment</h1>
-          <p className="mt-2 text-gray-400">Schedule a service with {worker.users?.name}</p>
+      {/* Rapido / Uber Style Waiting Overlay */}
+      {requestStatus === 'waiting' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <GlassCard className="max-w-md w-full p-8 text-center border-neon-cyan/40 shadow-2xl">
+            <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
+              <span className="absolute h-full w-full animate-ping rounded-full bg-neon-cyan/20 duration-1000" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-neon-cyan/10 border border-neon-cyan text-neon-cyan">
+                <Loader2 size={40} className="animate-spin" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Connecting to Worker...</h2>
+            <p className="text-sm text-gray-300 mb-6">
+              Request <span className="text-neon-cyan font-bold">{worker.users?.name}</span> ko bhej di gayi hai. Unke Accept/Reject karne ka wait karein.
+            </p>
+            <div className="text-xs text-gray-500 animate-pulse">Waiting for response...</div>
+          </GlassCard>
         </div>
+      )}
 
-        {/* Worker summary */}
-        <GlassCard className="mb-6 p-5 flex items-center gap-4">
-          <div className={`h-16 w-16 rounded-2xl border ${style.bg} ${style.border} flex items-center justify-center`}>
-            <Icon className={style.text} size={30} />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-white">{worker.users?.name}</h3>
-            <p className="text-sm text-gray-400">{worker.category} • ₹{worker.hourly_rate}/hr</p>
-          </div>
-          <Badge variant="emerald"><Check size={12} /> Verified</Badge>
-        </GlassCard>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Date & Time */}
-          <GlassCard className="p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Calendar size={18} className="text-neon-cyan" /> Date & Time
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Date</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required
-                  min={new Date().toISOString().split('T')[0]}
-                  className="booking-input" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Time</label>
-                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} required
-                  className="booking-input" />
-              </div>
+      {/* Request Accepted Modal */}
+      {requestStatus === 'accepted' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <GlassCard className="max-w-md w-full p-8 text-center border-neon-emerald/40">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neon-emerald/20 text-neon-emerald">
+              <CheckCircle2 size={40} />
             </div>
-            <div className="mt-4">
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Duration (hours)</label>
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setHours(String(Math.max(1, parseInt(hours) - 1)))}
-                  className="rounded-lg border border-white/10 px-3 py-2 text-gray-300 hover:border-neon-emerald/30">-</button>
-                <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} min="1" max="12"
-                  className="booking-input text-center max-w-[80px]" />
-                <button type="button" onClick={() => setHours(String(parseInt(hours) + 1))}
-                  className="rounded-lg border border-white/10 px-3 py-2 text-gray-300 hover:border-neon-emerald/30">+</button>
-                <span className="text-sm text-gray-400">hours</span>
-              </div>
-            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Request Accepted! 🎉</h2>
+            <p className="text-sm text-gray-300">Worker ne aapki booking confirm kar li hai. Dashboard par le ja rahe hain...</p>
           </GlassCard>
+        </div>
+      )}
 
-          {/* Location */}
-          <GlassCard className="p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <MapPin size={18} className="text-neon-emerald" /> Service Location
-            </h2>
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Address</label>
-                <textarea value={address} onChange={(e) => setAddress(e.target.value)} required
-                  placeholder="Enter your full address..."
-                  className="booking-input min-h-[80px] resize-none" />
-              </div>
-              <NeonButton type="button" variant="ghost" size="sm" onClick={handleUseMyLocation}>
-                <Navigation size={16} /> Use My Current Location
-              </NeonButton>
-              {location && (
-                <div className="flex items-center gap-2 text-sm text-neon-emerald">
-                  <Check size={14} /> Location captured: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                </div>
-              )}
-              {/* Map placeholder */}
-              <div className="relative h-48 rounded-xl border border-white/10 bg-base-800 overflow-hidden">
-                <div className="absolute inset-0 grid-bg opacity-50" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {location ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="relative">
-                        <MapPin size={32} className="text-neon-emerald" fill="currentColor" />
-                        <div className="absolute inset-0 animate-ping rounded-full bg-neon-emerald/30" />
-                      </div>
-                      <span className="text-xs text-gray-400">Your location</span>
-                    </div>
-                  ) : (
-                    <div className="text-center text-gray-500">
-                      <MapPin size={32} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Click "Use My Current Location" to pin your address on the map</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* Request Rejected Modal */}
+      {requestStatus === 'rejected' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <GlassCard className="max-w-md w-full p-8 text-center border-red-500/40">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-red-400">
+              <XCircle size={40} />
             </div>
-          </GlassCard>
-
-          {/* Notes */}
-          <GlassCard className="p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Clock size={18} className="text-neon-violet" /> Additional Notes
-            </h2>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Describe the work you need done..."
-              className="booking-input min-h-[80px] resize-none" />
-          </GlassCard>
-
-          {/* Summary */}
-          <GlassCard className="p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-200">Booking Summary</h2>
-            <div className="space-y-2 mb-4">
-              <SummaryRow label="Worker" value={worker.users?.name ?? ''} />
-              <SummaryRow label="Category" value={worker.category} />
-              <SummaryRow label="Duration" value={`${hours} hour(s)`} />
-              <SummaryRow label="Rate" value={`₹${worker.hourly_rate}/hr`} />
-              <div className="border-t border-white/10 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-200">Total Amount</span>
-                  <span className="text-2xl font-bold gradient-text-emerald-cyan">₹{totalAmount.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                <AlertCircle size={16} /> {error}
-              </div>
-            )}
-
-            <NeonButton type="submit" fullWidth size="lg" disabled={submitting}>
-              {submitting ? <><Loader2 size={18} className="animate-spin" /> Creating booking...</> : <>Proceed to Payment <ArrowRight size={18} /></>}
+            <h2 className="text-2xl font-bold text-white mb-2">Request Declined</h2>
+            <p className="text-sm text-gray-300 mb-6">Worker filhal available nahi hai. Kripya kisi doosre worker ko choose karein.</p>
+            <NeonButton fullWidth variant="ghost" onClick={() => setRequestStatus('idle')}>
+              Try Another Time / Worker
             </NeonButton>
           </GlassCard>
-        </form>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+          <ArrowLeft size={16} /> Back
+        </button>
+
+        <div className="grid gap-8 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <GlassCard className="p-6">
+              <div className="flex flex-col items-center text-center">
+                <div className={`h-20 w-20 rounded-2xl border ${style.bg} ${style.border} flex items-center justify-center mb-4`}>
+                  <Icon className={style.text} size={40} />
+                </div>
+                <h2 className="text-xl font-bold text-white">{worker.users?.name ?? 'Worker'}</h2>
+                <p className="text-sm text-gray-400 mb-2">{worker.category}</p>
+                <Badge variant={worker.is_verified ? 'emerald' : 'amber'}>
+                  <ShieldCheck size={12} /> {worker.is_verified ? 'Verified' : 'Pending Verification'}
+                </Badge>
+                <div className="mt-6 w-full border-t border-white/10 pt-4 text-left space-y-2 text-sm text-gray-300">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Hourly Rate:</span>
+                    <span className="font-semibold text-white">₹{worker.hourly_rate}/hr</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Rating:</span>
+                    <span className="font-semibold text-amber-400">★ {worker.rating?.toFixed(1) || '5.0'}</span>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </div>
+
+          <div className="md:col-span-2">
+            <GlassCard className="p-6">
+              <h1 className="text-xl font-bold text-white mb-1">Book Service</h1>
+              <p className="text-xs text-gray-400 mb-6">Details bharein aur request send karein.</p>
+
+              {errorMsg && (
+                <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400 flex items-center gap-2">
+                  <AlertCircle size={16} /> {errorMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleBooking} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1 flex items-center gap-1.5">
+                      <Calendar size={14} className="text-neon-cyan" /> Service Date
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setDate(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-neon-emerald/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1 flex items-center gap-1.5">
+                      <Clock size={14} className="text-neon-cyan" /> Service Time
+                    </label>
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-neon-emerald/40"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1">
+                    Duration: <span className="text-neon-emerald font-bold">{hours} hr</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="8"
+                    value={hours}
+                    onChange={(e) => setHours(Number(e.target.value))}
+                    className="w-full accent-neon-emerald"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1 flex items-center gap-1.5">
+                    <MapPin size={14} className="text-neon-cyan" /> Service Address
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Pura address likhein..."
+                    required
+                    className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-neon-emerald/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1">Special Notes (Optional)</label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Kaam se judi koi jaankari..."
+                    className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-neon-emerald/40"
+                  />
+                </div>
+
+                <div className="rounded-xl border border-white/5 bg-base-800/40 p-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-gray-400">Total Estimated Cost</p>
+                    <p className="text-lg font-bold text-white flex items-center">
+                      <IndianRupee size={16} /> {totalAmount.toFixed(2)}
+                    </p>
+                  </div>
+                  <Badge variant="cyan">{hours} Hours x ₹{worker.hourly_rate}</Badge>
+                </div>
+
+                <NeonButton type="submit" fullWidth variant="emerald" disabled={submitting}>
+                  {submitting ? 'Connecting...' : 'Request Booking Now'}
+                </NeonButton>
+              </form>
+            </GlassCard>
+          </div>
+        </div>
       </div>
-
-      <style>{`
-        .booking-input {
-          width: 100%;
-          border-radius: 0.75rem;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(11,15,25,0.6);
-          padding: 0.625rem 1rem;
-          color: #e5e7eb;
-          font-size: 0.875rem;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .booking-input:focus {
-          border-color: rgba(16,185,129,0.4);
-          box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
-        }
-        .booking-input::placeholder { color: #6b7280; }
-        .booking-input::-webkit-calendar-picker-indicator { filter: invert(0.7); }
-      `}</style>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-gray-400">{label}</span>
-      <span className="font-medium text-gray-200">{value}</span>
     </div>
   );
 }
