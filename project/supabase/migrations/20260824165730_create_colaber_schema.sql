@@ -1,8 +1,8 @@
 /*
-# Co-Laber Marketplace Schema
+# CoLabour Marketplace Schema
 
 ## Overview
-Creates the complete database schema for Co-Laber, a cooperative gig-worker marketplace.
+Creates the complete database schema for CoLabour, a cooperative gig-worker marketplace.
 Includes user profiles, worker profiles, bookings, and payments.
 
 ## Tables

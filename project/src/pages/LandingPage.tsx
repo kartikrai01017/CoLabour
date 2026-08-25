@@ -33,7 +33,7 @@ export function LandingPage() {
                 Find skilled <span className="gradient-text-emerald-cyan">gig workers</span> in seconds
               </h1>
               <p className="mt-6 max-w-lg text-lg text-gray-400">
-                Co-Laber connects you with verified local professionals for instant bookings,
+                CoLabour connects you with verified local professionals for instant bookings,
                 transparent pricing, and seamless UPI payments. No middlemen, no hassle.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
@@ -147,7 +147,7 @@ export function LandingPage() {
             <div className="relative z-10">
               <h2 className="text-4xl font-bold gradient-text-emerald-cyan">Ready to get started?</h2>
               <p className="mx-auto mt-4 max-w-xl text-gray-400">
-                Join thousands of customers and workers on the Co-Laber platform. Sign up free and start booking or earning today.
+                Join thousands of customers and workers on the CoLabour platform. Sign up free and start booking or earning today.
               </p>
               <div className="mt-8 flex justify-center gap-4">
                 <Link to="/signup"><NeonButton size="lg" variant="emerald">Create Account</NeonButton></Link>
@@ -166,7 +166,7 @@ export function LandingPage() {
               <Zap className="h-6 w-6 text-neon-emerald" fill="currentColor" />
               <span className="text-lg font-bold">Co<span className="gradient-text-emerald-cyan">Laber</span></span>
             </div>
-            <p className="text-sm text-gray-500">© 2026 Co-Laber. Cooperative gig marketplace.</p>
+            <p className="text-sm text-gray-500">© 2026 CoLabour. Cooperative gig marketplace.</p>
           </div>
         </div>
       </footer>
