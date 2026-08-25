@@ -1,0 +1,4 @@
+node_modules/
+colabour.db
+.env
+project/backend/
