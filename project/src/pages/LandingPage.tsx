@@ -6,10 +6,69 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { AnimatedCounter, GlowOrb, SectionTitle } from '@/components/ui/Shared';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { CATEGORIES } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 
+type Stats = {
+  active_workers: number;
+  jobs_completed: number;
+  average_rating: number;
+  on_time_rate: number | null;
+};
+
 export function LandingPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+  let mounted = true;
+
+  async function loadStats() {
+    setLoading(true);
+    setError(null);
+
+    const { data, error: rpcError } = await supabase.rpc(
+      'get_platform_stats'
+    );
+
+    if (!mounted) return;
+
+    if (rpcError) {
+      console.error('Error loading statistics:', rpcError);
+
+      setStats({
+        active_workers: 0,
+        jobs_completed: 0,
+        average_rating: 0,
+        on_time_rate: 0,
+      });
+
+      setError(rpcError.message);
+      setLoading(false);
+      return;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+
+    setStats({
+      active_workers: Number(row?.active_workers ?? 0),
+      jobs_completed: Number(row?.jobs_completed ?? 0),
+      average_rating: Number(row?.average_rating ?? 0),
+      on_time_rate: Number(row?.on_time_rate ?? 0),
+    });
+
+    setLoading(false);
+  }
+
+  loadStats();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
   return (
     <div className="relative min-h-screen overflow-hidden pt-16">
       {/* Background orbs */}
@@ -51,9 +110,18 @@ export function LandingPage() {
 
               {/* Trust badges */}
               <div className="mt-10 flex flex-wrap gap-6">
-                <TrustBadge icon={ShieldCheck} label="Verified Pros" />
-                <TrustBadge icon={Wallet} label="UPI Payments" />
-                <TrustBadge icon={Clock} label="Instant Booking" />
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <ShieldCheck size={18} className="text-neon-emerald" />
+                  <span>Verified Pros</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Wallet size={18} className="text-neon-cyan" />
+                  <span>UPI Payments</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Clock size={18} className="text-neon-cyan" />
+                  <span>Instant Booking</span>
+                </div>
               </div>
             </div>
 
@@ -73,10 +141,26 @@ export function LandingPage() {
       <section className="relative border-y border-white/5">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
-            <StatCard icon={Users} value={12450} suffix="+" label="Active Workers" />
-            <StatCard icon={Briefcase} value={38900} suffix="+" label="Jobs Completed" />
-            <StatCard icon={Star} value={4.8} suffix="/5" label="Avg Rating" />
-            <StatCard icon={TrendingUp} value={92} suffix="%" label="On-time Rate" />
+            {loading ? (
+              <div className="col-span-4 text-neutral-500 text-sm animate-fade-in">
+                Loading statistics…
+              </div>
+            ) : error ? (
+              <div className="col-span-4 text-red-500 text-sm animate-fade-in">
+                Error loading statistics: {error}
+              </div>
+            ) : !stats ? (
+              <div className="col-span-4 text-neutral-500 text-sm animate-fade-in">
+                No statistics available
+              </div>
+            ) : (
+              <>
+              <StatCard icon={Users} value={stats.active_workers} suffix="+" label="Active Workers" />
+              <StatCard icon={Briefcase} value={stats.jobs_completed} suffix="+" label="Jobs Completed" />
+              <StatCard icon={Star} value={stats.average_rating} suffix="/5" label="Avg Rating" />
+              <StatCard icon={TrendingUp} value={stats.on_time_rate} suffix="%" label="On-time Rate" />
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -183,14 +267,36 @@ function TrustBadge({ icon: Icon, label }: { icon: typeof ShieldCheck; label: st
   );
 }
 
-function StatCard({ icon: Icon, value, suffix, label }: { icon: typeof Users; value: number; suffix: string; label: string }) {
+function StatCard({
+  icon: Icon,
+  value,
+  suffix,
+  label,
+}: {
+  icon: typeof Users;
+  value: number | null | undefined;
+  suffix: string;
+  label: string;
+}) {
+  const safeValue = Number(value ?? 0);
+
   return (
     <GlassCard className="p-6 text-center">
-      <Icon className="mx-auto mb-3 text-neon-cyan" size={28} />
+      <Icon
+        className="mx-auto mb-3 text-neon-cyan"
+        size={28}
+      />
+
       <div className="text-3xl font-bold text-white">
-        <AnimatedCounter value={value} suffix={suffix} />
+        <AnimatedCounter
+          value={safeValue}
+          suffix={suffix}
+        />
       </div>
-      <p className="mt-1 text-sm text-gray-500">{label}</p>
+
+      <p className="mt-1 text-sm text-gray-500">
+        {label}
+      </p>
     </GlassCard>
   );
 }
