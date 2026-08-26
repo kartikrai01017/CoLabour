@@ -65,15 +65,14 @@ export async function fetchPlatformStats(): Promise<PlatformStats> {
         };
       }
     } catch {
-      // Fallback silently to local calculations
+      // fallback
     }
   }
 
-  // Calculate from local store
   const workers = getStored<WorkerWithUser[]>(LS_WORKERS, INITIAL_WORKERS);
   const bookings = getStored<Booking[]>(LS_BOOKINGS, INITIAL_BOOKINGS);
 
-  const activeWorkers = workers.filter((w) => w.is_verified).length;
+  const activeWorkers = workers.length;
   const completedJobs = bookings.filter((b) => b.status === 'completed' || b.status === 'paid').length;
   const ratedWorkers = workers.filter((w) => w.rating > 0);
   const avgRating = ratedWorkers.length
@@ -95,11 +94,17 @@ export async function fetchWorkersList(category: string = 'all'): Promise<Worker
     try {
       let query = supabase
         .from('worker_profiles')
-        .select('*, users!inner(name, email, phone)')
-        .eq('is_verified', true);
+        .select(`
+          *,
+          users (
+            name,
+            email,
+            phone
+          )
+        `);
 
       if (category !== 'all') {
-        query = query.eq('category', category);
+        query = query.ilike('category', category);
       }
 
       const { data, error } = await query;
@@ -113,9 +118,9 @@ export async function fetchWorkersList(category: string = 'all'): Promise<Worker
 
   const workers = getStored<WorkerWithUser[]>(LS_WORKERS, INITIAL_WORKERS);
   if (category === 'all') {
-    return workers.filter((w) => w.is_verified);
+    return workers;
   }
-  return workers.filter((w) => w.is_verified && w.category.toLowerCase() === category.toLowerCase());
+  return workers.filter((w) => w.category.toLowerCase() === category.toLowerCase());
 }
 
 export async function fetchWorkerProfile(id: string): Promise<WorkerWithUser | null> {
@@ -125,15 +130,22 @@ export async function fetchWorkerProfile(id: string): Promise<WorkerWithUser | n
     try {
       const { data, error } = await supabase
         .from('worker_profiles')
-        .select('*, users!inner(name, email, phone)')
-        .eq('id', id)
+        .select(`
+          *,
+          users (
+            name,
+            email,
+            phone
+          )
+        `)
+        .or(`id.eq.${id},user_id.eq.${id}`)
         .maybeSingle();
 
       if (!error && data) {
         return data as unknown as WorkerWithUser;
       }
     } catch {
-      // Fallback to local store
+      // fallback
     }
   }
 
@@ -340,9 +352,7 @@ export async function rejectPaymentDispute(paymentId: string): Promise<boolean> 
   if (isSupabaseConfigured()) {
     try {
       const { error } = await supabase.from('payments').update({ status: 'failed' }).eq('id', paymentId);
-      if (!error) {
-        return true;
-      }
+      if (!error) return true;
     } catch {
       // fallback
     }
@@ -361,7 +371,6 @@ export async function rejectPaymentDispute(paymentId: string): Promise<boolean> 
 export async function updateBookingStatus(bookingId: string, status: string): Promise<void> {
   initLocalDatabase();
 
-  // Always sync local storage first for instantaneous offline/hybrid resilience
   const bookings = getStored<Booking[]>(LS_BOOKINGS, INITIAL_BOOKINGS);
   const updated = bookings.map((b) => (b.id === bookingId ? { ...b, status } : b));
   setStored(LS_BOOKINGS, updated);
@@ -385,7 +394,7 @@ export async function fetchCustomerDashboardData(customerId: string): Promise<{
     try {
       const { data: bData } = await supabase
         .from('bookings')
-        .select('*, worker:worker_profiles!bookings_worker_id_fkey(id, category, hourly_rate, users:user_id(name))')
+        .select('*, worker:worker_profiles(id, category, hourly_rate, users(name))')
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false });
       const { data: pData } = await supabase
@@ -435,21 +444,40 @@ export async function fetchWorkerDashboardData(workerUserId: string): Promise<{
 }> {
   initLocalDatabase();
 
-  const workers = getStored<WorkerWithUser[]>(LS_WORKERS, INITIAL_WORKERS);
-  const users = getStored<User[]>(LS_USERS, INITIAL_USERS);
-  const workerProfile = workers.find((w) => w.user_id === workerUserId || w.id === workerUserId) || null;
-
-  if (isSupabaseConfigured() && workerProfile) {
+  if (isSupabaseConfigured()) {
     try {
-      const { data: bData } = await supabase.from('bookings').select('*, customer:users!bookings_customer_id_fkey(name, phone)').eq('worker_id', workerProfile.id).order('created_at', { ascending: false });
-      const { data: pData } = await supabase.from('payments').select('*').eq('worker_id', workerProfile.id).order('created_at', { ascending: false });
-      if (bData && pData) {
-        return { profile: workerProfile, bookings: bData as (Booking & { customer?: { name: string; phone: string } | null })[], payments: pData };
+      const { data: wp } = await supabase
+        .from('worker_profiles')
+        .select('*')
+        .or(`id.eq.${workerUserId},user_id.eq.${workerUserId}`)
+        .maybeSingle();
+
+      if (wp) {
+        const { data: bData } = await supabase
+          .from('bookings')
+          .select('*, customer:users(name, phone)')
+          .eq('worker_id', wp.id)
+          .order('created_at', { ascending: false });
+        const { data: pData } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('worker_id', wp.id)
+          .order('created_at', { ascending: false });
+
+        return {
+          profile: wp as WorkerProfile,
+          bookings: (bData || []) as unknown as (Booking & { customer?: { name: string; phone: string } | null })[],
+          payments: pData || [],
+        };
       }
     } catch {
       // fallback
     }
   }
+
+  const workers = getStored<WorkerWithUser[]>(LS_WORKERS, INITIAL_WORKERS);
+  const users = getStored<User[]>(LS_USERS, INITIAL_USERS);
+  const workerProfile = workers.find((w) => w.user_id === workerUserId || w.id === workerUserId) || null;
 
   const rawBookings = workerProfile
     ? getStored<Booking[]>(LS_BOOKINGS, INITIAL_BOOKINGS).filter(
@@ -483,7 +511,7 @@ export async function fetchAdminData(): Promise<{
 
   if (isSupabaseConfigured()) {
     try {
-      const { data: wData } = await supabase.from('worker_profiles').select('*, users:user_id(name, email)').order('created_at', { ascending: false });
+      const { data: wData } = await supabase.from('worker_profiles').select('*, users(name, email)').order('created_at', { ascending: false });
       const { data: bData } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
       const { data: pData } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
       if (wData && bData && pData) {
