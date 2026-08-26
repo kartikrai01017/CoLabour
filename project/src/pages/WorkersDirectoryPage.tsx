@@ -25,8 +25,7 @@ export function WorkersDirectoryPage() {
       setLoading(true);
       let query = supabase
         .from('worker_profiles')
-        .select('*, users!inner(name, email, phone)')
-        .eq('is_verified', true);
+        .select('*, users!inner(name, email, phone)');
 
       if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
@@ -68,7 +67,7 @@ export function WorkersDirectoryPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
+    <div className="relative min-h-screen overflow-hidden pt-20 pb-12 bg-[#070b14] text-slate-100">
       <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
       <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
 
@@ -89,6 +88,7 @@ export function WorkersDirectoryPage() {
               className="w-full rounded-xl border border-white/10 bg-base-800/60 py-3 pl-12 pr-4 text-sm text-gray-200 outline-none transition-all focus:border-neon-emerald/40 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
             />
           </div>
+
           <div className="flex items-center gap-2">
             <SlidersHorizontal size={18} className="text-gray-500" />
             <select
