@@ -9,6 +9,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { GlowOrb } from '@/components/ui/Shared';
+import { PaymentModal } from '@/components/ui/PaymentModal';
 import { supabase, type Booking, type Payment, type WorkerWithUser } from '@/lib/supabase';
 
 const UPI_APPS = [
@@ -30,6 +31,12 @@ export function PaymentPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  
+  // Popup Modal States
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState<'loading' | 'success' | 'failed'>('loading');
+  const [modalMessage, setModalMessage] = useState('');
+
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchBookingData = useCallback(async () => {
@@ -59,7 +66,6 @@ export function PaymentPage() {
     if (existingPayment) {
       setPayment(existingPayment as Payment);
     } else if (workerData && bookingData) {
-      // Create payment record with UPI URI
       const wp = workerData as unknown as WorkerWithUser;
       const amount = (bookingData as Booking).total_amount;
       const bookingId = (bookingData as Booking).id;
@@ -93,7 +99,7 @@ export function PaymentPage() {
     fetchBookingData();
   }, [fetchBookingData]);
 
-  // Polling engine
+  // Polling engine for payment status
   useEffect(() => {
     if (!payment || payment.status === 'paid') return;
 
@@ -110,7 +116,7 @@ export function PaymentPage() {
         if (updated.status === 'paid') {
           setShowSuccess(true);
           if (pollingRef.current) clearInterval(pollingRef.current);
-          setTimeout(() => navigate(`/customer/dashboard`), 4000);
+          setTimeout(() => navigate(`/customer-dashboard`), 4000);
         }
       }
     };
@@ -121,13 +127,15 @@ export function PaymentPage() {
 
   const handleConfirmPayment = async () => {
     if (!utrNumber || utrNumber.length < 8) {
-      setError('Please enter a valid UTR / Reference number');
+      setError('Please enter a valid 12-digit UTR / Reference number');
       return;
     }
     if (!payment) return;
 
     setSubmitting(true);
     setError('');
+    setModalStatus('loading');
+    setModalOpen(true);
 
     try {
       const { data, error: updateError } = await supabase
@@ -140,11 +148,15 @@ export function PaymentPage() {
       if (updateError) throw updateError;
       setPayment(data as Payment);
 
-      // Also update booking status
       await supabase.from('bookings').update({ status: 'payment_submitted' }).eq('id', booking?.id);
+
+      setModalStatus('success');
+      setModalMessage('Payment confirmation request worker ko bhej di gayi hai.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to confirm payment';
       setError(msg);
+      setModalStatus('failed');
+      setModalMessage(msg);
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +188,7 @@ export function PaymentPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
         <p className="text-gray-400">Booking or payment not found.</p>
-        <Link to="/customer/dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
+        <Link to="/customer-dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
       </div>
     );
   }
@@ -189,10 +201,23 @@ export function PaymentPage() {
       <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/15" />
       <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
 
+      <PaymentModal
+        isOpen={modalOpen}
+        status={modalStatus}
+        amount={payment.amount}
+        utrNumber={utrNumber}
+        message={modalMessage}
+        onClose={() => setModalOpen(false)}
+        onAction={() => {
+          setModalOpen(false);
+          navigate('/customer-dashboard');
+        }}
+      />
+
       {showSuccess && <SuccessModal amount={payment.amount} />}
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <Link to="/customer/dashboard" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emeraldGlow transition-colors">
+        <Link to="/customer-dashboard" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emeraldGlow transition-colors">
           <ArrowLeft size={16} /> Back to Dashboard
         </Link>
 
@@ -212,12 +237,12 @@ export function PaymentPage() {
           </div>
         </GlassCard>
 
-        {/* QR Code */}
+        {/* QR Code Section */}
         {!isPaid && (
           <GlassCard className="mb-6 p-8">
             <h2 className="mb-4 text-center text-lg font-semibold text-gray-200">Scan to Pay</h2>
             <div className="flex justify-center mb-4">
-              <div className="rounded-2xl bg-white p-4 inline-block">
+              <div className="rounded-2xl bg-white p-4 inline-block shadow-lg">
                 {payment.upi_uri && <QRCodeCanvas value={payment.upi_uri} size={200} level="H" includeMargin={false} />}
               </div>
             </div>
@@ -272,7 +297,7 @@ export function PaymentPage() {
                   <div>
                     <p className="text-sm font-medium text-amber-400">Payment Submitted - Awaiting Confirmation</p>
                     <p className="text-xs text-gray-400 mt-1">UTR: {payment.utr_number}</p>
-                    <p className="text-xs text-gray-500 mt-1">The worker will confirm receipt shortly. This page will update automatically.</p>
+                    <p className="text-xs text-gray-500 mt-1">The worker will confirm receipt shortly.</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
@@ -287,7 +312,7 @@ export function PaymentPage() {
                     value={utrNumber}
                     onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
                     placeholder="Enter 12-digit UTR"
-                    className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-3 text-center font-mono text-lg tracking-wider text-gray-200 outline-none transition-all focus:border-neon-emerald/40 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
+                    className="w-full rounded-xl border border-white/10 bg-base-800/60 px-4 py-3 text-center font-mono text-lg tracking-wider text-gray-200 outline-none transition-all focus:border-neon-emerald/40"
                     maxLength={12}
                   />
                 </div>
@@ -306,7 +331,6 @@ export function PaymentPage() {
           </GlassCard>
         )}
 
-        {/* Paid state */}
         {isPaid && (
           <GlassCard className="p-8 text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-neon-emerald/20">
@@ -314,17 +338,11 @@ export function PaymentPage() {
             </div>
             <h2 className="text-2xl font-bold text-white">Payment Complete</h2>
             <p className="mt-2 text-gray-400">Your booking has been confirmed and paid.</p>
-            <Link to="/customer/dashboard" className="mt-6 inline-block">
+            <Link to="/customer-dashboard" className="mt-6 inline-block">
               <NeonButton variant="emerald">Go to My Bookings <ArrowRight size={18} /></NeonButton>
             </Link>
           </GlassCard>
         )}
-
-        {/* Security note */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
-          <ShieldCheck size={14} className="text-neon-emerald" />
-          CoLabour never asks for your UPI PIN, password, or card details. Payments are made directly in your UPI app.
-        </div>
       </div>
     </div>
   );
@@ -346,7 +364,6 @@ function SuccessModal({ amount }: { amount: number }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-base-900/80 backdrop-blur-md animate-fade-in">
-      {/* Confetti */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {pieces.map((p, i) => (
           <div
@@ -362,25 +379,8 @@ function SuccessModal({ amount }: { amount: number }) {
       </div>
 
       <div className="relative z-10 text-center animate-scale-in">
-        {/* 3D Checkmark */}
-        <div className="relative mx-auto mb-8 perspective-1000">
-          <div className="relative h-32 w-32">
-            <div className="absolute inset-0 rounded-full bg-neon-emerald/20 animate-ping" />
-            <div className="absolute inset-0 rounded-full bg-neon-emerald/30 animate-pulse-glow" />
-            <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-neon-emerald to-neon-cyan shadow-[0_0_60px_rgba(16,185,129,0.5)]">
-              <svg viewBox="0 0 52 52" className="h-16 w-16 text-white" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 27 L22 35 L38 18" className="animate-[fadeIn_0.5s_ease-out_0.2s_both]" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
         <h2 className="text-4xl font-bold gradient-text-emerald-cyan mb-2">Payment Successful!</h2>
         <p className="text-xl text-gray-300 mb-2">₹{amount.toFixed(2)} has been paid</p>
-        <p className="text-sm text-gray-500 mb-6 flex items-center justify-center gap-2">
-          <PartyPopper size={18} className="text-neon-violet" /> Redirecting to your bookings...
-        </p>
-
         <div className="flex items-center justify-center gap-2 text-sm text-neon-emerald">
           <Zap size={16} className="animate-pulse" /> Booking Confirmed
         </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar, MapPin, Wallet, Clock, Loader2, ArrowRight, Briefcase, CheckCircle,
-  Receipt, TrendingUp, AlertCircle,
+  Receipt, TrendingUp, AlertCircle, Hourglass, XCircle
 } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
@@ -104,7 +104,7 @@ export function CustomerDashboardPage() {
               <AlertCircle size={20} className="text-amber-400 animate-pulse" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment(s)</p>
-                <p className="text-xs text-gray-400">Complete your payment to confirm your booking</p>
+                <p className="text-xs text-gray-400">Complete your payment to proceed with the booking</p>
               </div>
               {pendingPayments[0] && (
                 <Link to={`/payment/${pendingPayments[0].booking_id}`}>
@@ -177,7 +177,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; la
 function BookingCard({ booking, showReceipt }: { booking: BookingWithWorker; showReceipt?: boolean }) {
   const statusColors: Record<string, 'amber' | 'cyan' | 'violet' | 'emerald' | 'gray'> = {
     pending: 'amber',
-    confirmed: 'cyan',
+    confirmed: 'emerald',
     in_progress: 'violet',
     payment_submitted: 'cyan',
     completed: 'emerald',
@@ -200,24 +200,44 @@ function BookingCard({ booking, showReceipt }: { booking: BookingWithWorker; sho
             <p className="text-xs text-gray-400">{booking.category}</p>
           </div>
         </div>
-        <Badge variant={variant}>{booking.status.replace('_', ' ')}</Badge>
+        <Badge variant={variant}>
+          {booking.status === 'pending' ? 'Pending Approval' : booking.status.replace('_', ' ')}
+        </Badge>
       </div>
-      <div className="space-y-1.5 text-sm text-gray-400 mb-3">
+
+      <div className="space-y-1.5 text-sm text-gray-400 mb-4">
         <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(booking.scheduled_at).toLocaleString()}</div>
         <div className="flex items-center gap-2"><MapPin size={14} /> {booking.address}</div>
         <div className="flex items-center gap-2"><Wallet size={14} /> ₹{Number(booking.total_amount).toFixed(2)}</div>
       </div>
+
       <div className="flex gap-2">
+        {/* Pending: Worker has not accepted yet */}
         {booking.status === 'pending' && (
+          <div className="flex items-center gap-2 text-xs font-medium text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+            <Hourglass size={14} className="animate-spin" /> Worker approval pending...
+          </div>
+        )}
+
+        {/* Confirmed: Worker accepted, customer can now pay */}
+        {booking.status === 'confirmed' && (
           <Link to={`/payment/${booking.id}`}>
             <NeonButton size="sm" variant="emerald">Pay Now <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
+
         {booking.status === 'payment_submitted' && (
           <Link to={`/payment/${booking.id}`}>
             <NeonButton size="sm" variant="cyan">Track Payment <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
+
+        {booking.status === 'cancelled' && (
+          <div className="flex items-center gap-2 text-xs font-medium text-red-400">
+            <XCircle size={14} /> Request Declined
+          </div>
+        )}
+
         {showReceipt && (booking.status === 'paid' || booking.status === 'completed') && (
           <div className="flex items-center gap-2 text-sm text-neon-emerald">
             <CheckCircle size={14} /> Payment confirmed
