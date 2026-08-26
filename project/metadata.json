@@ -1,0 +1,10 @@
+{
+  "name": "Remix CoLabour",
+  "description": "Imported from GitHub: kartikrai01017/CoLabour",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

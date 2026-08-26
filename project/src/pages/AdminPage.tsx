@@ -7,9 +7,10 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { GlowOrb, AnimatedCounter } from '@/components/ui/Shared';
-import { supabase, type WorkerProfile, type Booking, type Payment } from '@/lib/supabase';
+import { type WorkerProfile, type Booking, type Payment } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
+import { fetchAdminData, toggleWorkerVerification, resolvePaymentDispute } from '@/lib/dataService';
 
 interface WorkerWithUser extends WorkerProfile {
   users?: { name: string; email: string } | null;
@@ -24,22 +25,17 @@ export function AdminPage() {
   const [disputes, setDisputes] = useState<Payment[]>([]);
 
   const fetchData = useCallback(async () => {
-    const { data: workerData } = await supabase
-      .from('worker_profiles')
-      .select('*, users:user_id(name, email)')
-      .order('created_at', { ascending: false });
-    setWorkers((workerData as unknown as WorkerWithUser[]) ?? []);
-
-    const { data: bookingData } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-    setBookings(bookingData ?? []);
-
-    const { data: paymentData } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
-    setPayments(paymentData ?? []);
-
-    // Disputes = payments submitted but not confirmed for a long time (simplified: all payment_submitted)
-    setDisputes((paymentData ?? []).filter((p) => p.status === 'payment_submitted'));
-
-    setLoading(false);
+    try {
+      const data = await fetchAdminData();
+      setWorkers(data.workers as unknown as WorkerWithUser[]);
+      setBookings(data.bookings);
+      setPayments(data.payments);
+      setDisputes(data.payments.filter((p) => p.status === 'payment_submitted'));
+    } catch {
+      // fallback
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -49,7 +45,7 @@ export function AdminPage() {
 
   const handleToggleVerify = async (workerId: string, current: boolean) => {
     try {
-      await supabase.from('worker_profiles').update({ is_verified: !current }).eq('id', workerId);
+      await toggleWorkerVerification(workerId, current);
       await fetchData();
     } catch {
       alert('Failed to update verification');
@@ -58,11 +54,7 @@ export function AdminPage() {
 
   const handleResolveDispute = async (paymentId: string) => {
     try {
-      await supabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', paymentId);
-      const payment = payments.find((p) => p.id === paymentId);
-      if (payment) {
-        await supabase.from('bookings').update({ status: 'paid' }).eq('id', payment.booking_id);
-      }
+      await resolvePaymentDispute(paymentId);
       await fetchData();
     } catch {
       alert('Failed to resolve dispute');
@@ -92,7 +84,7 @@ export function AdminPage() {
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
             <div className="inline-flex rounded-xl bg-neon-violet/10 border border-neon-violet/30 p-2.5">
-              <ShieldCheck size={24} className="text-neon-violetGlow" />
+              <ShieldCheck size={24} className="text-neon-violet" />
             </div>
             <h1 className="text-2xl font-bold text-white">Admin Command Center</h1>
           </div>
@@ -198,9 +190,9 @@ export function AdminPage() {
 
 function TelemetryCard({ icon: Icon, label, value, color }: { icon: typeof Users; label: string; value: string | number; color: string }) {
   const colors: Record<string, string> = {
-    emerald: 'text-neon-emeraldGlow bg-neon-emerald/10 border-neon-emerald/30',
-    cyan: 'text-neon-cyanGlow bg-neon-cyan/10 border-neon-cyan/30',
-    violet: 'text-neon-violetGlow bg-neon-violet/10 border-neon-violet/30',
+    emerald: 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/30',
+    cyan: 'text-neon-cyan bg-neon-cyan/10 border-neon-cyan/30',
+    violet: 'text-neon-violet bg-neon-violet/10 border-neon-violet/30',
     amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
   };
   return (

@@ -113,3 +113,27 @@
     backface-visibility: hidden;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #colabour-receipt-print, #colabour-receipt-print * {
+    visibility: visible;
+  }
+  #colabour-receipt-print {
+    position: fixed;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%);
+    width: 340px;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    clip-path: none !important;
+    padding: 16px !important;
+    margin: 0 auto;
+    z-index: 999999;
+  }
+}

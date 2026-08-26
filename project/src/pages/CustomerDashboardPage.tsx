@@ -2,15 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar, MapPin, Wallet, Clock, Loader2, ArrowRight, Briefcase, CheckCircle,
-  Receipt, TrendingUp, AlertCircle,
+  Receipt, AlertCircle, Eye, X
 } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { GlowOrb, AnimatedCounter } from '@/components/ui/Shared';
-import { supabase, type Booking, type Payment } from '@/lib/supabase';
+import { type Booking, type Payment } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
+import { fetchCustomerDashboardData } from '@/lib/dataService';
+import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
 
 interface BookingWithWorker extends Booking {
   worker?: { id: string; category: string; hourly_rate: number; users?: { name: string } | null } | null;
@@ -25,37 +27,31 @@ export function CustomerDashboardPage() {
   const [bookings, setBookings] = useState<BookingWithWorker[]>([]);
   const [payments, setPayments] = useState<PaymentWithBooking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSlip, setSelectedSlip] = useState<{ booking: BookingWithWorker; payment?: PaymentWithBooking } | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-
-    const { data: bookingData } = await supabase
-      .from('bookings')
-      .select('*, worker:worker_profiles!bookings_worker_id_fkey(id, category, hourly_rate, users:user_id(name))')
-      .eq('customer_id', user.id)
-      .order('created_at', { ascending: false });
-
-    setBookings((bookingData as unknown as BookingWithWorker[]) ?? []);
-
-    const { data: paymentData } = await supabase
-      .from('payments')
-      .select('*, bookings(id, category)')
-      .eq('customer_id', user.id)
-      .order('created_at', { ascending: false });
-
-    setPayments((paymentData as unknown as PaymentWithBooking[]) ?? []);
-    setLoading(false);
+    try {
+      const data = await fetchCustomerDashboardData(user.id);
+      setBookings(data.bookings as BookingWithWorker[]);
+      setPayments(data.payments as PaymentWithBooking[]);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
     if (user) fetchData();
+    else setLoading(false);
   }, [user, authLoading, fetchData]);
 
   // Poll for status updates
   useEffect(() => {
     if (!user) return;
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, [user, fetchData]);
 
@@ -81,7 +77,7 @@ export function CustomerDashboardPage() {
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
-            <h1 className="text-2xl font-bold text-white">My Dashboard</h1>
+            <h1 className="text-2xl font-bold text-white">My Customer Dashboard</h1>
             <p className="text-sm text-gray-400">Welcome back, {user?.name}</p>
           </div>
           <Link to="/workers">
@@ -92,7 +88,7 @@ export function CustomerDashboardPage() {
         {/* Stats */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard icon={Calendar} label="Active Bookings" value={activeBookings.length} color="cyan" />
-          <StatCard icon={CheckCircle} label="Completed" value={completedBookings.length} color="emerald" />
+          <StatCard icon={CheckCircle} label="Completed & Paid" value={completedBookings.length} color="emerald" />
           <StatCard icon={Wallet} label="Total Spent" value={`₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} color="violet" />
           <StatCard icon={Clock} label="Pending Payments" value={pendingPayments.length} color="amber" />
         </div>
@@ -103,12 +99,12 @@ export function CustomerDashboardPage() {
             <div className="flex items-center gap-3">
               <AlertCircle size={20} className="text-amber-400 animate-pulse" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment(s)</p>
-                <p className="text-xs text-gray-400">Complete your payment to confirm your booking</p>
+                <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment action(s)</p>
+                <p className="text-xs text-gray-400">Complete or track your UPI payment to settle your booking</p>
               </div>
               {pendingPayments[0] && (
                 <Link to={`/payment/${pendingPayments[0].booking_id}`}>
-                  <NeonButton size="sm" variant="emerald">Pay Now <ArrowRight size={14} /></NeonButton>
+                  <NeonButton size="sm" variant="emerald">Open Payment Gateway <ArrowRight size={14} /></NeonButton>
                 </Link>
               )}
             </div>
@@ -138,29 +134,64 @@ export function CustomerDashboardPage() {
           {/* Completed & receipts */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Receipt size={18} className="text-neon-emerald" /> History & Receipts
+              <Receipt size={18} className="text-neon-emerald" /> History & Official POS Slips
             </h2>
             <div className="space-y-4">
               {completedBookings.length === 0 ? (
                 <GlassCard className="p-8 text-center text-gray-500">No completed bookings yet</GlassCard>
               ) : (
-                completedBookings.map((booking) => (
-                  <BookingCard key={booking.id} booking={booking} showReceipt />
-                ))
+                completedBookings.map((booking) => {
+                  const p = payments.find((pay) => pay.booking_id === booking.id);
+                  return (
+                    <BookingCard
+                      key={booking.id}
+                      booking={booking}
+                      showReceipt
+                      onViewSlip={() => setSelectedSlip({ booking, payment: p })}
+                    />
+                  );
+                })
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Slip Modal */}
+      {selectedSlip && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/85 backdrop-blur-md overflow-y-auto"
+          onClick={() => setSelectedSlip(null)}
+        >
+          <div className="relative w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedSlip(null)}
+              className="absolute top-2 right-2 z-20 rounded-full bg-base-800 p-2 text-gray-400 hover:text-white border border-white/10"
+            >
+              <X size={18} />
+            </button>
+            <CoLabourPrinterEngine
+              bookingId={selectedSlip.booking.id}
+              workerName={selectedSlip.booking.worker?.users?.name ?? 'Professional Worker'}
+              workerSkill={selectedSlip.booking.category}
+              customerName={user?.name ?? 'Verified Customer'}
+              date={selectedSlip.payment?.paid_at || selectedSlip.booking.scheduled_at}
+              utrNumber={selectedSlip.payment?.utr_number || 'UPI-OFFICIAL-UTR'}
+              totalAmount={Number(selectedSlip.booking.total_amount)}
+              onDone={() => setSelectedSlip(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; label: string; value: string | number; color: string }) {
   const colors: Record<string, string> = {
-    emerald: 'text-neon-emeraldGlow bg-neon-emerald/10 border-neon-emerald/30',
-    cyan: 'text-neon-cyanGlow bg-neon-cyan/10 border-neon-cyan/30',
-    violet: 'text-neon-violetGlow bg-neon-violet/10 border-neon-violet/30',
+    emerald: 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/30',
+    cyan: 'text-neon-cyan bg-neon-cyan/10 border-neon-cyan/30',
+    violet: 'text-neon-violet bg-neon-violet/10 border-neon-violet/30',
     amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
   };
   return (
@@ -174,7 +205,15 @@ function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; la
   );
 }
 
-function BookingCard({ booking, showReceipt }: { booking: BookingWithWorker; showReceipt?: boolean }) {
+function BookingCard({
+  booking,
+  showReceipt,
+  onViewSlip,
+}: {
+  booking: BookingWithWorker;
+  showReceipt?: boolean;
+  onViewSlip?: () => void;
+}) {
   const statusColors: Record<string, 'amber' | 'cyan' | 'violet' | 'emerald' | 'gray'> = {
     pending: 'amber',
     confirmed: 'cyan',
@@ -200,7 +239,7 @@ function BookingCard({ booking, showReceipt }: { booking: BookingWithWorker; sho
             <p className="text-xs text-gray-400">{booking.category}</p>
           </div>
         </div>
-        <Badge variant={variant}>{booking.status.replace('_', ' ')}</Badge>
+        <Badge variant={variant}>{booking.status === 'confirmed' ? 'Accepted' : booking.status.replace('_', ' ')}</Badge>
       </div>
       <div className="space-y-1.5 text-sm text-gray-400 mb-3">
         <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(booking.scheduled_at).toLocaleString()}</div>
@@ -210,17 +249,29 @@ function BookingCard({ booking, showReceipt }: { booking: BookingWithWorker; sho
       <div className="flex gap-2">
         {booking.status === 'pending' && (
           <Link to={`/payment/${booking.id}`}>
-            <NeonButton size="sm" variant="emerald">Pay Now <ArrowRight size={14} /></NeonButton>
+            <NeonButton size="sm" variant="amber">Waiting for Acceptance <ArrowRight size={14} /></NeonButton>
+          </Link>
+        )}
+        {booking.status === 'confirmed' && (
+          <Link to={`/payment/${booking.id}`}>
+            <NeonButton size="sm" variant="emerald">Pay Worker via UPI <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
         {booking.status === 'payment_submitted' && (
           <Link to={`/payment/${booking.id}`}>
-            <NeonButton size="sm" variant="cyan">Track Payment <ArrowRight size={14} /></NeonButton>
+            <NeonButton size="sm" variant="cyan">Track Verification <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
         {showReceipt && (booking.status === 'paid' || booking.status === 'completed') && (
-          <div className="flex items-center gap-2 text-sm text-neon-emerald">
-            <CheckCircle size={14} /> Payment confirmed
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5 text-xs text-neon-emerald font-medium">
+              <CheckCircle size={14} /> Payment Settled
+            </span>
+            {onViewSlip && (
+              <NeonButton size="sm" variant="ghost" onClick={onViewSlip} className="text-xs">
+                <Eye size={14} /> View CoLabour Slip
+              </NeonButton>
+            )}
           </div>
         )}
       </div>

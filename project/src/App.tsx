@@ -1,8 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Navbar } from '@/components/Navbar';
 import { GlobalWorkerAlert } from '@/components/GlobalWorkerAlert';
-
+import { QuickRoleSwitcher } from '@/components/QuickRoleSwitcher';
+import { CoLabourAIWidget } from '@/components/CoLabourAIWidget';
 import { LandingPage } from '@/pages/LandingPage';
+import { SignupPage, LoginPage } from '@/pages/AuthPages';
 import { WorkersDirectoryPage } from '@/pages/WorkersDirectoryPage';
 import { WorkerProfilePage } from '@/pages/WorkerProfilePage';
 import { BookingPage } from '@/pages/BookingPage';
@@ -10,38 +14,42 @@ import { PaymentPage } from '@/pages/PaymentPage';
 import { WorkerDashboardPage } from '@/pages/WorkerDashboardPage';
 import { CustomerDashboardPage } from '@/pages/CustomerDashboardPage';
 import { AdminPage } from '@/pages/AdminPage';
-import { LoginPage, SignupPage } from '@/pages/AuthPages';
 
-export default function App() {
+function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <BrowserRouter>
         <GlobalWorkerAlert />
-
-        <div className="min-h-screen bg-[#070b14] text-slate-100 selection:bg-neon-emerald/30">
+        <QuickRoleSwitcher />
+        <CoLabourAIWidget />
+        <div className="min-h-screen bg-base text-gray-100">
+          <Navbar />
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/workers" element={<WorkersDirectoryPage />} />
-            <Route path="/workers/:id" element={<WorkerProfilePage />} />
-            
-            {/* Dono route aliases taaki koi bhi link miss na ho */}
-            <Route path="/booking/:id" element={<BookingPage />} />
-            <Route path="/book/:id" element={<BookingPage />} />
-
-            <Route path="/payment/:id" element={<PaymentPage />} />
-            
-            <Route path="/worker/dashboard" element={<WorkerDashboardPage />} />
-            <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/workers" element={<WorkersDirectoryPage />} />
+            <Route path="/workers/:id" element={<WorkerProfilePage />} />
+            <Route path="/book/:id" element={
+              <ProtectedRoute><BookingPage /></ProtectedRoute>
+            } />
+            <Route path="/payment/:id" element={
+              <ProtectedRoute><PaymentPage /></ProtectedRoute>
+            } />
+            <Route path="/worker/dashboard" element={
+              <ProtectedRoute allowedRoles={['worker']}><WorkerDashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/customer/dashboard" element={
+              <ProtectedRoute allowedRoles={['customer']}><CustomerDashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}><AdminPage /></ProtectedRoute>
+            } />
           </Routes>
         </div>
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
+
+export default App;

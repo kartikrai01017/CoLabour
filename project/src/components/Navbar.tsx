@@ -1,11 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Zap, Menu, X, LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react';
+import { Zap, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { NeonButton } from '@/components/ui/NeonButton';
 
 export function Navbar() {
-  const { user, workerProfile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
