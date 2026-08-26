@@ -90,7 +90,7 @@ export function BookingPage() {
         setRequestStatus('accepted');
         clearInterval(pollIntervalRef.current);
         localStorage.setItem('pendingBookingStatus', 'accepted');
-        setTimeout(() => { clearPendingState(); navigate('/customer-dashboard'); }, 2000);
+        setTimeout(() => { clearPendingState(); navigate('/customer/dashboard'); }, 2000);
       } else if (data.status === 'cancelled') {
         setRequestStatus('rejected');
         clearInterval(pollIntervalRef.current);
@@ -99,7 +99,7 @@ export function BookingPage() {
         // edge: worker confirmed and customer already moving to payment
         setRequestStatus('accepted');
         clearInterval(pollIntervalRef.current);
-        setTimeout(() => { clearPendingState(); navigate('/customer-dashboard'); }, 1500);
+        setTimeout(() => { clearPendingState(); navigate('/customer/dashboard'); }, 1500);
       }
     };
     checkOnce();

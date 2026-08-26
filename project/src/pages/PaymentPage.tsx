@@ -158,7 +158,7 @@ export function PaymentPage() {
         if (updated.status === 'paid') {
           setShowSuccess(true);
           if (pollingRef.current) clearInterval(pollingRef.current);
-          setTimeout(() => navigate(`/customer-dashboard`), 4000);
+          setTimeout(() => navigate(`/customer/dashboard`), 4000);
         }
         if (updated.status === 'failed' || updated.status === 'paid') {
           if (pollingRef.current) clearInterval(pollingRef.current);
@@ -246,7 +246,7 @@ export function PaymentPage() {
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4 px-6 text-center">
         <AlertCircle className="text-amber-400" size={32} />
         <p className="text-gray-300 max-w-md">{blockedReason}</p>
-        <Link to="/customer-dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
+        <Link to="/customer/dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
       </div>
     );
   }
@@ -255,7 +255,7 @@ export function PaymentPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
         <p className="text-gray-400">Booking or payment not found.</p>
-        <Link to="/customer-dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
+        <Link to="/customer/dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
       </div>
     );
   }
@@ -277,14 +277,14 @@ export function PaymentPage() {
         onClose={() => setModalOpen(false)}
         onAction={() => {
           setModalOpen(false);
-          navigate('/customer-dashboard');
+          navigate('/customer/dashboard');
         }}
       />
 
       {showSuccess && <SuccessModal amount={payment.amount} />}
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <Link to="/customer-dashboard" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emeraldGlow transition-colors">
+        <Link to="/customer/dashboard" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emeraldGlow transition-colors">
           <ArrowLeft size={16} /> Back to Dashboard
         </Link>
 
@@ -405,7 +405,7 @@ export function PaymentPage() {
             </div>
             <h2 className="text-2xl font-bold text-white">Payment Complete</h2>
             <p className="mt-2 text-gray-400">Your booking has been confirmed and paid.</p>
-            <Link to="/customer-dashboard" className="mt-6 inline-block">
+            <Link to="/customer/dashboard" className="mt-6 inline-block">
               <NeonButton variant="emerald">Go to My Bookings <ArrowRight size={18} /></NeonButton>
             </Link>
           </GlassCard>
