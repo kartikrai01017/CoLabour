@@ -11,17 +11,21 @@ import { Badge } from '@/components/ui/Badge';
 import { GlowOrb } from '@/components/ui/Shared';
 import { PaymentModal } from '@/components/ui/PaymentModal';
 import { supabase, type Booking, type Payment, type WorkerWithUser } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 const UPI_APPS = [
-  { name: 'GPay', scheme: 'tez', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
-  { name: 'PhonePe', scheme: 'phonepe', color: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
-  { name: 'Paytm', scheme: 'paytmmp', color: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-  { name: 'BHIM', scheme: 'bhim', color: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
+  { name: 'GPay', scheme: 'tez', pkg: 'com.google.android.apps.nbu.paisa.user', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
+  { name: 'PhonePe', scheme: 'phonepe', pkg: 'com.phonepe.app', color: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
+  { name: 'Paytm', scheme: 'paytmmp', pkg: 'net.one97.paytm', color: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
+  { name: 'BHIM', scheme: 'bhim', pkg: 'in.org.npci.upiapp', color: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
 ];
+
+const UTR_REGEX = /^[0-9]{12}$/;
 
 export function PaymentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
@@ -31,6 +35,7 @@ export function PaymentPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [blockedReason, setBlockedReason] = useState<string | null>(null);
   
   // Popup Modal States
   const [modalOpen, setModalOpen] = useState(false);
@@ -41,20 +46,51 @@ export function PaymentPage() {
 
   const fetchBookingData = useCallback(async () => {
     if (!id) return;
+    setBlockedReason(null);
     const { data: bookingData } = await supabase
       .from('bookings')
       .select('*')
       .eq('id', id)
       .maybeSingle();
     if (!bookingData) { setLoading(false); return; }
-    setBooking(bookingData as Booking);
+    const b = bookingData as Booking;
+    setBooking(b);
+
+    // Ownership guard: only customer who owns booking can pay
+    if (user && b.customer_id !== user.id) {
+      setBlockedReason('You are not authorized to pay for this booking.');
+      setLoading(false);
+      return;
+    }
+
+    // State-machine guard: only confirmed / payment_submitted / paid can enter payment flow
+    if (b.status === 'pending') {
+      setBlockedReason('Worker ne abhi booking accept nahi ki hai. Please wait for confirmation.');
+      setLoading(false);
+      return;
+    }
+    if (b.status === 'cancelled') {
+      setBlockedReason('This booking was cancelled / rejected by worker.');
+      setLoading(false);
+      return;
+    }
+    if (b.status === 'completed') {
+      // treat as paid-completed, allow viewing but not re-pay
+    }
 
     const { data: workerData } = await supabase
       .from('worker_profiles')
       .select('*, users!inner(name, email, phone)')
-      .eq('id', (bookingData as Booking).worker_id)
+      .eq('id', (b as Booking).worker_id)
       .maybeSingle();
-    setWorker(workerData as unknown as WorkerWithUser | null);
+    const wp = workerData as unknown as WorkerWithUser | null;
+    setWorker(wp);
+
+    if (!wp?.upi_id) {
+      setBlockedReason('Worker UPI not configured. Please contact support.');
+      setLoading(false);
+      return;
+    }
 
     // Check for existing payment
     const { data: existingPayment } = await supabase
@@ -65,12 +101,11 @@ export function PaymentPage() {
 
     if (existingPayment) {
       setPayment(existingPayment as Payment);
-    } else if (workerData && bookingData) {
-      const wp = workerData as unknown as WorkerWithUser;
-      const amount = (bookingData as Booking).total_amount;
-      const bookingId = (bookingData as Booking).id;
+    } else if (wp && ['confirmed', 'payment_submitted', 'paid'].includes(b.status)) {
+      const amount = b.total_amount;
+      const bookingId = b.id;
       const workerName = encodeURIComponent(wp.users?.name ?? 'Worker');
-      const upiUri = `upi://pay?pa=${encodeURIComponent(wp.upi_id)}&pn=${workerName}&am=${Number(amount).toFixed(2)}&cu=INR&tn=CoLaber_${bookingId.slice(0, 8)}`;
+      const upiUri = `upi://pay?pa=${encodeURIComponent(wp.upi_id)}&pn=${workerName}&am=${Number(amount).toFixed(2)}&cu=INR&tn=CoLabour_${bookingId.slice(0, 8)}`;
       const token = crypto.randomUUID();
 
       const { data: newPayment, error: payError } = await supabase
@@ -78,7 +113,7 @@ export function PaymentPage() {
         .insert({
           booking_id: bookingId,
           worker_id: wp.id,
-          customer_id: (bookingData as Booking).customer_id,
+          customer_id: b.customer_id,
           amount,
           upi_uri: upiUri,
           verification_token: token,
@@ -89,19 +124,26 @@ export function PaymentPage() {
 
       if (!payError && newPayment) {
         setPayment(newPayment as Payment);
+      } else if (payError) {
+        // Handle race / duplicate (unique booking_id) -> refetch
+        const { data: retry } = await supabase.from('payments').select('*').eq('booking_id', id).maybeSingle();
+        if (retry) setPayment(retry as Payment);
+        else setError(payError.message);
       }
     }
 
     setLoading(false);
-  }, [id]);
+  }, [id, user]);
 
   useEffect(() => {
     fetchBookingData();
   }, [fetchBookingData]);
 
-  // Polling engine for payment status
+  // Polling engine for payment status - only when awaiting verification
   useEffect(() => {
-    if (!payment || payment.status === 'paid') return;
+    if (!payment || payment.status === 'paid' || payment.status === 'failed') return;
+    // Only poll when submitted; if still pending (no UTR), no need
+    if (payment.status !== 'payment_submitted') return;
 
     const poll = async () => {
       const { data } = await supabase
@@ -118,19 +160,22 @@ export function PaymentPage() {
           if (pollingRef.current) clearInterval(pollingRef.current);
           setTimeout(() => navigate(`/customer-dashboard`), 4000);
         }
+        if (updated.status === 'failed' || updated.status === 'paid') {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+        }
       }
     };
 
-    pollingRef.current = setInterval(poll, 2500);
+    pollingRef.current = setInterval(poll, 3000);
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [payment, navigate]);
 
   const handleConfirmPayment = async () => {
-    if (!utrNumber || utrNumber.length < 8) {
-      setError('Please enter a valid 12-digit UTR / Reference number');
+    if (!UTR_REGEX.test(utrNumber)) {
+      setError('Please enter a valid 12-digit UTR / Reference number (only digits)');
       return;
     }
-    if (!payment) return;
+    if (!payment || payment.status === 'paid' || payment.status === 'payment_submitted') return;
 
     setSubmitting(true);
     setError('');
@@ -171,8 +216,20 @@ export function PaymentPage() {
   };
 
   const handleUpiApp = (scheme: string) => {
-    if (payment?.upi_uri) {
-      window.location.href = `intent://${payment.upi_uri.replace('upi://', '')}#Intent;scheme=${scheme};package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.google.android.apps.nbu.paisa.user;end;`;
+    if (!payment?.upi_uri) return;
+    const app = UPI_APPS.find((a) => a.scheme === scheme);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      // Desktop: just show QR, fallback copy UPI
+      window.open(payment.upi_uri, '_blank');
+      return;
+    }
+    if (isAndroid && app) {
+      window.location.href = `intent://${payment.upi_uri.replace('upi://', '')}#Intent;scheme=${scheme};package=${app.pkg};S.browser_fallback_url=https://play.google.com/store/apps/details?id=${app.pkg};end;`;
+    } else {
+      // iOS or unknown: direct UPI uri
+      window.location.href = payment.upi_uri;
     }
   };
 
@@ -180,6 +237,16 @@ export function PaymentPage() {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16">
         <Loader2 size={32} className="animate-spin text-neon-emerald" />
+      </div>
+    );
+  }
+
+  if (blockedReason) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4 px-6 text-center">
+        <AlertCircle className="text-amber-400" size={32} />
+        <p className="text-gray-300 max-w-md">{blockedReason}</p>
+        <Link to="/customer-dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
       </div>
     );
   }

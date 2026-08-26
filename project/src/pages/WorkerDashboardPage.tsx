@@ -92,8 +92,16 @@ export function WorkerDashboardPage() {
 
   useEffect(() => {
     if (!workerProfile) return;
-    const interval = setInterval(fetchData, 2500);
-    return () => clearInterval(interval);
+    // Polling fallback; also try realtime channel
+    const interval = setInterval(fetchData, 4000);
+    const channel = (supabase as any).channel?.(`worker-${workerProfile.id}`)
+      ?.on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `worker_id=eq.${workerProfile.id}` }, () => fetchData())
+      ?.on('postgres_changes', { event: '*', schema: 'public', table: 'payments', filter: `worker_id=eq.${workerProfile.id}` }, () => fetchData())
+      ?.subscribe?.();
+    return () => {
+      clearInterval(interval);
+      try { (supabase as any).removeChannel?.(channel); } catch {}
+    };
   }, [workerProfile, fetchData]);
 
   const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
@@ -109,24 +117,35 @@ export function WorkerDashboardPage() {
     if (!user) return;
     setConfirmingId(paymentId);
     try {
-      const { error } = await supabase
-        .from('payments')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
-        .eq('id', paymentId);
-      if (error) throw error;
-
       const cur = payments.find((p) => p.id === paymentId);
-      if (cur?.booking_id) {
-        await supabase.from('bookings').update({ status: 'paid' }).eq('id', cur.booking_id);
+      // Try secure RPC first (manual worker confirmation)
+      const { data: rpcData, error: rpcError } = await (supabase as any).rpc('confirm_payment_received', {
+        p_payment_id: paymentId,
+        p_worker_user_id: user.id,
+      });
+      if (rpcError || (rpcData && rpcData.success === false)) {
+        // Fallback to direct update if RPC not available / failed
+        if (rpcError) console.warn('RPC fallback:', rpcError.message);
+        const { error } = await supabase
+          .from('payments')
+          .update({ status: 'paid', paid_at: new Date().toISOString() })
+          .eq('id', paymentId);
+        if (error) throw error;
+        if (cur?.booking_id) {
+          await supabase.from('bookings').update({ status: 'paid' }).eq('id', cur.booking_id);
+        }
       }
 
       playSoundBoxTone();
-      if (cur) setRecentPaidPayment(cur);
+      // Use fresh data for receipt
+      const fresh = cur ? { ...cur, status: 'paid', paid_at: new Date().toISOString() } as PaymentWithBooking : null;
+      if (fresh) setRecentPaidPayment(fresh);
+      else if (cur) setRecentPaidPayment(cur);
       setShowBillModal(true);
 
       await fetchData();
-    } catch {
-      alert('Payment confirmation failed');
+    } catch (e: any) {
+      alert(e?.message || 'Payment confirmation failed');
     } finally {
       setConfirmingId(null);
     }
@@ -153,18 +172,22 @@ export function WorkerDashboardPage() {
     }
   };
 
-  // Trigger browser print dialog for thermal receipt
+  // Trigger browser print dialog for thermal receipt - escape to prevent XSS
+  const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] as string));
   const handlePrintReceipt = (payment: PaymentWithBooking) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow popups to print receipt');
       return;
     }
-
+    const rid = escapeHtml(payment.id.slice(0, 8));
+    const d = escapeHtml(new Date(payment.paid_at || payment.created_at).toLocaleString());
+    const utr = escapeHtml(payment.utr_number || 'N/A');
+    const amt = escapeHtml(Number(payment.amount).toFixed(2));
     printWindow.document.write(`
       <html>
         <head>
-          <title>CoLabour Receipt - ${payment.id.slice(0, 8)}</title>
+          <title>CoLabour Receipt - ${rid}</title>
           <style>
             body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 20px; color: #000; }
             .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
@@ -178,11 +201,11 @@ export function WorkerDashboardPage() {
             <h3>COLABOUR SERVICES</h3>
             <p>Official Payment Receipt</p>
           </div>
-          <div class="row"><span>Receipt ID:</span><span>#${payment.id.slice(0, 8)}</span></div>
-          <div class="row"><span>Date:</span><span>${new Date(payment.paid_at || payment.created_at).toLocaleString()}</span></div>
-          <div class="row"><span>UTR / Ref:</span><span>${payment.utr_number || 'N/A'}</span></div>
+          <div class="row"><span>Receipt ID:</span><span>#${rid}</span></div>
+          <div class="row"><span>Date:</span><span>${d}</span></div>
+          <div class="row"><span>UTR / Ref:</span><span>${utr}</span></div>
           <div class="row"><span>Status:</span><span>PAID & VERIFIED</span></div>
-          <div class="total row"><span>TOTAL PAID:</span><span>₹${Number(payment.amount).toFixed(2)}</span></div>
+          <div class="total row"><span>TOTAL PAID:</span><span>₹${amt}</span></div>
           <div class="footer">
             <p>Thank you for using CoLabour!</p>
             <p>This is a computer generated digital receipt.</p>
@@ -191,7 +214,7 @@ export function WorkerDashboardPage() {
             window.onload = function() { window.print(); window.close(); }
           </script>
         </body>
-      </html>
+       </html>
     `);
     printWindow.document.close();
   };
@@ -220,7 +243,8 @@ export function WorkerDashboardPage() {
   const paidPayments = payments.filter((p) => p.status === 'paid');
   const activeBookings = bookings.filter((b) => ['pending', 'confirmed', 'in_progress', 'payment_submitted'].includes(b.status));
   
-  const latestPendingRequest = bookings.find((b) => b.status === 'pending');
+  const pendingRequests = bookings.filter((b) => b.status === 'pending');
+  const latestPendingRequest = pendingRequests[0];
   const latestIncomingPayment = pendingPayments[0];
   const completedJobs = bookings.filter((b) => b.status === 'paid' || b.status === 'completed').length;
 
@@ -294,44 +318,8 @@ export function WorkerDashboardPage() {
         </div>
       )}
 
-      {/* 2. INCOMING BOOKING REQUEST POPUP */}
-      {latestPendingRequest && !showBillModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fade-in">
-          <GlassCard className="w-full max-w-lg border-2 border-neon-cyan/50 p-6 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-4 w-4 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-neon-cyan"></span>
-                </span>
-                <h2 className="text-xl font-bold text-white">New Booking Request!</h2>
-              </div>
-              <Badge variant="cyan">Instant</Badge>
-            </div>
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between items-center bg-base-800/60 p-3 rounded-xl">
-                <span className="text-gray-400 text-sm">Customer</span>
-                <span className="text-white font-semibold">{latestPendingRequest.customer?.name ?? 'Customer'}</span>
-              </div>
-              <div className="flex justify-between items-center bg-base-800/60 p-3 rounded-xl">
-                <span className="text-gray-400 text-sm">Fare</span>
-                <span className="text-neon-emerald font-bold text-lg">₹{Number(latestPendingRequest.total_amount).toFixed(2)}</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <NeonButton variant="danger" size="lg" onClick={() => handleUpdateBookingStatus(latestPendingRequest.id, 'cancelled')}>
-                <XCircle size={18} /> Reject
-              </NeonButton>
-              <NeonButton variant="emerald" size="lg" onClick={() => handleUpdateBookingStatus(latestPendingRequest.id, 'confirmed')}>
-                <Check size={18} /> Accept
-              </NeonButton>
-            </div>
-          </GlassCard>
-        </div>
-      )}
-
-      {/* 3. INCOMING PAYMENT VERIFICATION POPUP */}
-      {latestIncomingPayment && !latestPendingRequest && !showBillModal && (
+      {/* 2. INCOMING PAYMENT VERIFICATION POPUP - priority over booking (revenue) */}
+      {latestIncomingPayment && !showBillModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fade-in">
           <GlassCard className="w-full max-w-lg border-2 border-neon-emerald/60 p-6 shadow-[0_0_60px_rgba(16,185,129,0.35)]">
             <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
@@ -342,6 +330,7 @@ export function WorkerDashboardPage() {
                 <div>
                   <h2 className="text-xl font-bold text-white">Payment Verification</h2>
                   <p className="text-xs text-gray-400">Kya aapko payment mil gaya?</p>
+                  {pendingPayments.length > 1 && <p className="text-xs text-amber-400">+{pendingPayments.length - 1} more pending</p>}
                 </div>
               </div>
               <Badge variant="emerald">Verify</Badge>
@@ -378,6 +367,43 @@ export function WorkerDashboardPage() {
                 ) : (
                   <><Check size={18} /> Yes (Received)</>
                 )}
+              </NeonButton>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* 3. INCOMING BOOKING REQUEST POPUP - shown only when no payment verification pending */}
+      {latestPendingRequest && !showBillModal && !latestIncomingPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fade-in">
+          <GlassCard className="w-full max-w-lg border-2 border-neon-cyan/50 p-6 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-4 w-4 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-neon-cyan"></span>
+                </span>
+                <h2 className="text-xl font-bold text-white">New Booking Request! {pendingRequests.length > 1 ? `(${pendingRequests.length})` : ''}</h2>
+              </div>
+              <Badge variant="cyan">Instant</Badge>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center bg-base-800/60 p-3 rounded-xl">
+                <span className="text-gray-400 text-sm">Customer</span>
+                <span className="text-white font-semibold">{latestPendingRequest.customer?.name ?? 'Customer'}</span>
+              </div>
+              <div className="flex justify-between items-center bg-base-800/60 p-3 rounded-xl">
+                <span className="text-gray-400 text-sm">Fare</span>
+                <span className="text-neon-emerald font-bold text-lg">₹{Number(latestPendingRequest.total_amount).toFixed(2)}</span>
+              </div>
+              {pendingRequests.length > 1 && <p className="text-xs text-gray-500 text-center">+{pendingRequests.length - 1} more requests in queue</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <NeonButton variant="danger" size="lg" onClick={() => handleUpdateBookingStatus(latestPendingRequest.id, 'cancelled')}>
+                <XCircle size={18} /> Reject
+              </NeonButton>
+              <NeonButton variant="emerald" size="lg" onClick={() => handleUpdateBookingStatus(latestPendingRequest.id, 'confirmed')}>
+                <Check size={18} /> Accept
               </NeonButton>
             </div>
           </GlassCard>

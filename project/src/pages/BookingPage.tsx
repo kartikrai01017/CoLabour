@@ -22,9 +22,16 @@ export function BookingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Rapido style waiting screen states
-  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
-  const [requestStatus, setRequestStatus] = useState<'idle' | 'waiting' | 'accepted' | 'rejected'>('idle');
+  // Rapido style waiting screen states - persist across refresh via localStorage
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(() => {
+    try { return localStorage.getItem('pendingBookingId'); } catch { return null; }
+  });
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'waiting' | 'accepted' | 'rejected'>(() => {
+    try {
+      const s = localStorage.getItem('pendingBookingStatus');
+      return (s as any) ?? 'idle';
+    } catch { return 'idle'; }
+  });
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -56,28 +63,47 @@ export function BookingPage() {
     fetchWorker();
   }, [id]);
 
-  // Live polling for worker response (Accept / Reject)
+  // Persist waiting state for refresh recovery
+  useEffect(() => {
+    try {
+      if (createdBookingId) localStorage.setItem('pendingBookingId', createdBookingId);
+      else localStorage.removeItem('pendingBookingId');
+      localStorage.setItem('pendingBookingStatus', requestStatus);
+    } catch {}
+  }, [createdBookingId, requestStatus]);
+
+  const clearPendingState = () => {
+    setCreatedBookingId(null);
+    setRequestStatus('idle');
+    try { localStorage.removeItem('pendingBookingId'); localStorage.setItem('pendingBookingStatus', 'idle'); } catch {}
+  };
+
+  // Live polling for worker response (Accept / Reject) - also re-hydrates on refresh
   useEffect(() => {
     if (!createdBookingId || requestStatus !== 'waiting') return;
 
-    pollIntervalRef.current = setInterval(async () => {
-      const { data } = await supabase
-        .from('bookings')
-        .select('status')
-        .eq('id', createdBookingId)
-        .single();
-
-      if (data) {
-        if (data.status === 'confirmed') {
-          setRequestStatus('accepted');
-          clearInterval(pollIntervalRef.current);
-          setTimeout(() => navigate('/customer-dashboard'), 2000);
-        } else if (data.status === 'cancelled') {
-          setRequestStatus('rejected');
-          clearInterval(pollIntervalRef.current);
-        }
+    // immediate check on mount in case status already changed while away
+    const checkOnce = async () => {
+      const { data } = await supabase.from('bookings').select('status').eq('id', createdBookingId).maybeSingle();
+      if (!data) { clearPendingState(); return; }
+      if (data.status === 'confirmed') {
+        setRequestStatus('accepted');
+        clearInterval(pollIntervalRef.current);
+        localStorage.setItem('pendingBookingStatus', 'accepted');
+        setTimeout(() => { clearPendingState(); navigate('/customer-dashboard'); }, 2000);
+      } else if (data.status === 'cancelled') {
+        setRequestStatus('rejected');
+        clearInterval(pollIntervalRef.current);
+        localStorage.setItem('pendingBookingStatus', 'rejected');
+      } else if (['paid','completed','payment_submitted'].includes(data.status)) {
+        // edge: worker confirmed and customer already moving to payment
+        setRequestStatus('accepted');
+        clearInterval(pollIntervalRef.current);
+        setTimeout(() => { clearPendingState(); navigate('/customer-dashboard'); }, 1500);
       }
-    }, 2000);
+    };
+    checkOnce();
+    pollIntervalRef.current = setInterval(checkOnce, 2500);
 
     return () => clearInterval(pollIntervalRef.current);
   }, [createdBookingId, requestStatus, navigate]);
@@ -88,39 +114,60 @@ export function BookingPage() {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
     if (!date || !time || !address) { setErrorMsg('Date, Time aur Address bharein.'); return; }
+    // Validate future datetime
+    const scheduledAt = new Date(`${date}T${time}`);
+    if (isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() - 60000) {
+      setErrorMsg('Please select a future date & time.');
+      return;
+    }
 
     setSubmitting(true);
     setErrorMsg('');
 
     try {
-      const scheduledAt = new Date(`${date}T${time}`).toISOString();
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([
-          {
-            customer_id: user.id,
-            worker_id: worker?.id,
-            category: worker?.category,
-            address,
-            notes: notes || null,
-            scheduled_at: scheduledAt,
-            total_amount: totalAmount,
-            hours,
-            status: 'pending',
-          }
-        ])
-        .select()
-        .single();
-
+      const iso = scheduledAt.toISOString();
+      // Try with hours; fallback without hours if column missing in DB
+      let data: any = null;
+      let error: any = null;
+      const payloadWithHours: any = {
+        customer_id: user.id,
+        worker_id: worker?.id,
+        category: worker?.category,
+        address,
+        notes: notes || null,
+        scheduled_at: iso,
+        total_amount: totalAmount,
+        hours,
+        status: 'pending',
+      };
+      const res1 = await supabase.from('bookings').insert([payloadWithHours]).select().single();
+      data = res1.data; error = res1.error;
+      if (error && /hours/i.test(error.message)) {
+        const { hours: _h, ...payloadNoHours } = payloadWithHours;
+        // Encode hours in notes if column missing
+        const notesWithHours = `Duration: ${hours}h` + (notes ? ` | ${notes}` : '');
+        (payloadNoHours as any).notes = notesWithHours;
+        const res2 = await supabase.from('bookings').insert([payloadNoHours]).select().single();
+        data = res2.data; error = res2.error;
+      }
       if (error) throw error;
 
       setCreatedBookingId(data.id);
       setRequestStatus('waiting');
+      try { localStorage.setItem('pendingBookingId', data.id); localStorage.setItem('pendingBookingStatus', 'waiting'); } catch {}
     } catch (err: any) {
       setErrorMsg(err.message || 'Request bhejne me error aayi.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCancelWaiting = async () => {
+    if (!createdBookingId) { clearPendingState(); return; }
+    try {
+      await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', createdBookingId);
+    } catch {}
+    clearPendingState();
   };
 
   if (loading || authLoading) {
@@ -163,7 +210,8 @@ export function BookingPage() {
             <p className="text-sm text-gray-300 mb-6">
               Request <span className="text-neon-cyan font-bold">{worker.users?.name}</span> ko bhej di gayi hai. Unke Accept/Reject karne ka wait karein.
             </p>
-            <div className="text-xs text-gray-500 animate-pulse">Waiting for response...</div>
+            <div className="text-xs text-gray-500 animate-pulse mb-4">Waiting for response...</div>
+            <NeonButton variant="ghost" size="sm" onClick={handleCancelWaiting}>Cancel Request</NeonButton>
           </GlassCard>
         </div>
       )}
@@ -190,7 +238,7 @@ export function BookingPage() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Request Declined</h2>
             <p className="text-sm text-gray-300 mb-6">Worker filhal available nahi hai. Kripya kisi doosre worker ko choose karein.</p>
-            <NeonButton fullWidth variant="ghost" onClick={() => setRequestStatus('idle')}>
+            <NeonButton fullWidth variant="ghost" onClick={() => { clearPendingState(); }}>
               Try Another Time / Worker
             </NeonButton>
           </GlassCard>

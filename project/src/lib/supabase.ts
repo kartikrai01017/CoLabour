@@ -53,6 +53,8 @@ export interface Booking {
   status: string;
   notes: string | null;
   created_at: string;
+  hours?: number;
+  completed_at?: string | null;
 }
 
 export interface Payment {

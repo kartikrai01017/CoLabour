@@ -62,7 +62,12 @@ export function CustomerDashboardPage() {
   const activeBookings = bookings.filter((b) => ['pending', 'confirmed', 'in_progress', 'payment_submitted'].includes(b.status));
   const completedBookings = bookings.filter((b) => b.status === 'paid' || b.status === 'completed');
   const totalSpent = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amount), 0);
-  const pendingPayments = payments.filter((p) => p.status === 'pending' || p.status === 'payment_submitted');
+  // Only payments that actually need action: confirmed bookings with pending payment, or submitted awaiting verification
+  const needsPayment = payments.filter((p) => p.status === 'pending' && bookings.find((b) => b.id === p.booking_id && b.status === 'confirmed'));
+  const awaitingVerification = payments.filter((p) => p.status === 'payment_submitted');
+  const pendingPayments = payments.filter((p) => p.status === 'pending' || p.status === 'payment_submitted'); // for stats
+  // For Pay Now banner, prioritize confirmed -> pending payment
+  const actionablePayment = needsPayment[0] ?? awaitingVerification[0] ?? null;
 
   if (authLoading || loading) {
     return (
@@ -97,21 +102,33 @@ export function CustomerDashboardPage() {
           <StatCard icon={Clock} label="Pending Payments" value={pendingPayments.length} color="amber" />
         </div>
 
-        {/* Pending payments alert */}
-        {pendingPayments.length > 0 && (
+        {/* Pending payments alert - only actionable */}
+        {actionablePayment && (
           <GlassCard className="mb-6 border-amber-500/30 p-4 animate-slide-up">
             <div className="flex items-center gap-3">
               <AlertCircle size={20} className="text-amber-400 animate-pulse" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment(s)</p>
-                <p className="text-xs text-gray-400">Complete your payment to proceed with the booking</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {actionablePayment.status === 'payment_submitted'
+                    ? `Payment submitted - awaiting worker verification`
+                    : `You have ${needsPayment.length} booking(s) ready for payment`}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {actionablePayment.status === 'payment_submitted' ? 'Worker will confirm receipt shortly' : 'Complete your payment to proceed with the booking'}
+                </p>
               </div>
-              {pendingPayments[0] && (
-                <Link to={`/payment/${pendingPayments[0].booking_id}`}>
-                  <NeonButton size="sm" variant="emerald">Pay Now <ArrowRight size={14} /></NeonButton>
-                </Link>
-              )}
+              <Link to={`/payment/${actionablePayment.booking_id}`}>
+                <NeonButton size="sm" variant={actionablePayment.status === 'payment_submitted' ? 'cyan' : 'emerald'}>
+                  {actionablePayment.status === 'payment_submitted' ? 'Track Payment' : 'Pay Now'} <ArrowRight size={14} />
+                </NeonButton>
+              </Link>
             </div>
+          </GlassCard>
+        )}
+        {awaitingVerification.length > 0 && needsPayment.length === 0 && null}
+        {pendingPayments.length > 0 && !actionablePayment && (
+          <GlassCard className="mb-6 border-amber-500/20 p-3 text-xs text-gray-400">
+            {pendingPayments.length} payment(s) in {pendingPayments[0].status} state waiting for booking confirmation.
           </GlassCard>
         )}
 
