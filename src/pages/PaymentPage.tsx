@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
   ArrowLeft, Loader2, AlertCircle, Copy, Check, Smartphone, ShieldCheck, Clock,
-  PartyPopper, ArrowRight, RefreshCw, Lock, Hourglass, CheckCircle2
+  ArrowRight, RefreshCw, Lock, Hourglass, CheckCircle2
 } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
@@ -31,7 +31,6 @@ export function PaymentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [testReceiptMode, setTestReceiptMode] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -39,7 +38,10 @@ export function PaymentPage() {
     if (!id) return;
     try {
       const bookingData = await fetchBookingById(id);
-      if (!bookingData) { setLoading(false); return; }
+      if (!bookingData) { 
+        setLoading(false); 
+        return; 
+      }
       setBooking(bookingData);
 
       const workerData = await fetchWorkerProfile(bookingData.worker_id);
@@ -71,8 +73,8 @@ export function PaymentPage() {
         };
         setPayment(newPayment);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Error fetching context:', err);
     } finally {
       setLoading(false);
     }
@@ -82,40 +84,41 @@ export function PaymentPage() {
     fetchBookingData();
   }, [fetchBookingData]);
 
-  // Polling engine for live status changes (booking confirmation by worker + payment acceptance)
+  // Status Polling Engine
   useEffect(() => {
-    if (!id) return;
+    if (!id || testReceiptMode) return;
 
     const poll = async () => {
       try {
         const updatedBooking = await fetchBookingById(id);
         if (updatedBooking) {
-          setBooking((prev) => (prev?.status !== updatedBooking.status ? updatedBooking : prev));
+          setBooking(updatedBooking);
         }
 
         const updated = await fetchPaymentByBookingId(id);
         if (updated) {
           setPayment(updated);
-          if (updated.status === 'paid' && !showSuccess) {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3500);
+          if (updated.status === 'paid' || updated.status === 'completed') {
+            if (pollingRef.current) clearInterval(pollingRef.current);
           }
         }
       } catch {
-        // ignore
+        // fail silently
       }
     };
 
-    pollingRef.current = setInterval(poll, 1000);
-    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
-  }, [id, showSuccess]);
+    pollingRef.current = setInterval(poll, 1500);
+    return () => { 
+      if (pollingRef.current) clearInterval(pollingRef.current); 
+    };
+  }, [id, testReceiptMode]);
 
   const handleConfirmPayment = async () => {
     if (!utrNumber || utrNumber.length < 8) {
       setError('Please enter a valid 12-digit UTR / Reference number');
       return;
     }
-    if (!payment || !booking || !worker) return;
+    if (!payment || !booking || !worker || submitting) return;
 
     setSubmitting(true);
     setError('');
@@ -156,7 +159,7 @@ export function PaymentPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16">
-        <Loader2 size={32} className="animate-spin text-neon-emerald" />
+        <Loader2 size={32} className="animate-spin text-emerald-400" />
       </div>
     );
   }
@@ -170,21 +173,61 @@ export function PaymentPage() {
     );
   }
 
-  const isPaid = testReceiptMode || payment.status === 'paid' || booking.status === 'paid' || booking.status === 'completed';
+  const isPaid = testReceiptMode || payment.status === 'paid' || payment.status === 'completed' || booking.status === 'paid' || booking.status === 'completed';
   const isSubmitted = payment.status === 'payment_submitted' || booking.status === 'payment_submitted';
-  // Check if worker has accepted/confirmed the booking
   const isWorkerAccepted = booking.status !== 'pending';
 
+  // 1. Agar payment complete ho chuka hai, toh DIRECT Slip Machine Engine dikhao
+  if (isPaid) {
+    return (
+      <div className="relative min-h-screen overflow-hidden pt-20 pb-12 px-4 max-w-2xl mx-auto">
+        <GlowOrb className="top-20 -left-20 h-80 w-80 bg-emerald-500/15" />
+        <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-cyan-500/10" />
+
+        <div className="flex items-center justify-between mb-6">
+          <Link to="/customer/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-emerald-400 transition-colors">
+            <ArrowLeft size={16} /> Back to Dashboard
+          </Link>
+          <button
+            type="button"
+            onClick={() => setTestReceiptMode(false)}
+            className="text-xs px-3 py-1.5 rounded-full border border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-all font-mono"
+          >
+            ✕ Close Slip View
+          </button>
+        </div>
+
+        <div className="text-center mb-6">
+          <Badge variant="emerald" className="px-4 py-1.5 text-xs font-mono">
+            SETTLEMENT COMPLETED
+          </Badge>
+        </div>
+
+        {/* The 3D Sound & POS Slip Machine Component */}
+        <CoLabourPrinterEngine
+          bookingId={booking.id}
+          workerName={worker.users?.name ?? 'Professional Worker'}
+          workerSkill={booking.category}
+          workerUpiId={worker.upi_id}
+          customerName="Verified Customer"
+          date={payment.paid_at || new Date().toISOString()}
+          utrNumber={payment.utr_number || 'UPI-REF-SUCCESS'}
+          totalAmount={Number(payment.amount)}
+          onDone={() => navigate('/customer/dashboard')}
+        />
+      </div>
+    );
+  }
+
+  // 2. Agar payment complete nahi hua hai, tabhi scan/pay gateway dikhao
   return (
     <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
-      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/15" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
-
-      {showSuccess && <SuccessModal amount={payment.amount} />}
+      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-emerald-500/15" />
+      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-cyan-500/10" />
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
-          <Link to="/customer/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emerald transition-colors">
+          <Link to="/customer/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-emerald-400 transition-colors">
             <ArrowLeft size={16} /> Back to Dashboard
           </Link>
           <button
@@ -192,24 +235,22 @@ export function PaymentPage() {
             onClick={() => setTestReceiptMode(!testReceiptMode)}
             className="text-xs px-3 py-1.5 rounded-full border border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-all font-mono"
           >
-            {testReceiptMode ? '✕ Exit Test Receipt' : '⚡ Quick Test Receipt'}
+            ⚡ Quick Test Slip / Toing
           </button>
         </div>
 
         <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-3xl font-bold gradient-text-emerald-cyan">Payment Gateway</h1>
+          <h1 className="text-3xl font-bold text-white">Payment Gateway</h1>
           <p className="mt-2 text-gray-400">Direct Worker Settlement powered by UPI</p>
         </div>
 
         {/* Amount & Status Banner */}
         <GlassCard className="mb-6 p-6 text-center">
           <p className="text-sm text-gray-400 mb-1">Total Payable Amount</p>
-          <p className="text-5xl font-bold gradient-text-emerald-cyan">₹{payment.amount.toFixed(2)}</p>
+          <p className="text-5xl font-bold text-emerald-400 font-mono">₹{payment.amount.toFixed(2)}</p>
           <div className="mt-3 flex items-center justify-center gap-2">
-            <Badge variant={isPaid ? 'emerald' : isSubmitted ? 'amber' : isWorkerAccepted ? 'cyan' : 'amber'}>
-              {isPaid ? (
-                <><Check size={12} /> Payment Confirmed</>
-              ) : isSubmitted ? (
+            <Badge variant={isSubmitted ? 'amber' : isWorkerAccepted ? 'cyan' : 'amber'}>
+              {isSubmitted ? (
                 <><Clock size={12} /> Worker Verifying UTR</>
               ) : isWorkerAccepted ? (
                 <><CheckCircle2 size={12} /> Worker Accepted & Ready</>
@@ -220,11 +261,11 @@ export function PaymentPage() {
           </div>
         </GlassCard>
 
-        {/* 1. STATE: LOCKED - Waiting for Worker Acceptance */}
-        {!isWorkerAccepted && !isPaid && (
-          <GlassCard className="mb-6 p-8 text-center border-amber-500/30 bg-amber-500/5 animate-pulse-glow">
+        {/* STATE: LOCKED - Waiting for Worker Acceptance */}
+        {!isWorkerAccepted && (
+          <GlassCard className="mb-6 p-8 text-center border-amber-500/30 bg-amber-500/5">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <Lock size={32} className="animate-pulse" />
+              <Lock size={32} />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">QR Code Locked</h2>
             <p className="text-sm text-amber-300/90 font-medium max-w-md mx-auto mb-4">
@@ -239,15 +280,14 @@ export function PaymentPage() {
           </GlassCard>
         )}
 
-        {/* 2. STATE: UNLOCKED - Worker Accepted, Reveal QR Code and Payment Form */}
-        {isWorkerAccepted && !isPaid && (
+        {/* STATE: UNLOCKED - Worker Accepted, Reveal QR Code and Payment Form */}
+        {isWorkerAccepted && (
           <>
-            {/* QR Code Card */}
             <GlassCard className="mb-6 p-8 animate-slide-up">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-neon-emerald animate-ping" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-neon-emerald">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
                     Job Confirmed by {worker.users?.name ?? 'Worker'}
                   </span>
                 </div>
@@ -256,35 +296,34 @@ export function PaymentPage() {
 
               <h2 className="mb-4 text-center text-lg font-semibold text-gray-200">Scan to Pay via UPI</h2>
               <div className="flex justify-center mb-4">
-                <div className="rounded-2xl bg-white p-4 inline-block shadow-[0_0_40px_rgba(255,255,255,0.15)]">
+                <div className="rounded-2xl bg-white p-4 inline-block shadow-2xl">
                   {payment.upi_uri && <QRCodeCanvas value={payment.upi_uri} size={210} level="H" includeMargin={false} />}
                 </div>
               </div>
               <p className="text-center text-sm text-gray-400 mb-2">Scan with GPay, PhonePe, Paytm, or BHIM</p>
 
-              {/* UPI ID display with Copy Button */}
               <div className="flex items-center justify-center gap-2 mt-4">
-                <div className="rounded-xl border border-white/10 bg-base-800 px-4 py-2.5 text-sm flex items-center gap-2">
+                <div className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm flex items-center gap-2">
                   <span className="text-gray-400 text-xs font-mono">WORKER UPI: </span>
-                  <span className="font-mono font-bold text-neon-cyan">{worker.upi_id}</span>
+                  <span className="font-mono font-bold text-cyan-400">{worker.upi_id}</span>
                 </div>
                 <button
+                  type="button"
                   onClick={handleCopyUpiId}
-                  className="rounded-xl border border-white/10 bg-base-800/80 p-2.5 text-gray-400 hover:text-neon-emerald hover:border-neon-emerald/40 transition-all flex items-center gap-1.5 text-xs"
-                  title="Copy UPI ID"
+                  className="rounded-xl border border-white/10 bg-slate-900/80 p-2.5 text-gray-400 hover:text-emerald-400 hover:border-emerald-500/40 transition-all flex items-center gap-1.5 text-xs"
                 >
-                  {copied ? <Check size={16} className="text-neon-emerald" /> : <Copy size={16} />}
+                  {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
                 </button>
               </div>
 
-              {/* UPI App deep links */}
               <div className="mt-6">
                 <p className="mb-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Or Launch Installed App Directly:</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {UPI_APPS.map((app) => (
                     <button
                       key={app.name}
+                      type="button"
                       onClick={() => handleUpiApp(app.scheme)}
                       className={`flex flex-col items-center gap-2 rounded-xl border ${app.color} ${app.border} p-3 transition-all hover:scale-105`}
                     >
@@ -296,10 +335,9 @@ export function PaymentPage() {
               </div>
             </GlassCard>
 
-            {/* UTR Confirmation Card */}
             <GlassCard className="mb-6 p-6 animate-slide-up">
               <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-gray-200">
-                <ShieldCheck size={20} className="text-neon-emerald" /> Submit UPI Reference (UTR)
+                <ShieldCheck size={20} className="text-emerald-400" /> Submit UPI Reference (UTR)
               </h2>
               <p className="mb-4 text-sm text-gray-400">
                 After paying in your UPI app, enter the 12-digit transaction UTR number to submit for worker confirmation.
@@ -313,30 +351,27 @@ export function PaymentPage() {
                       <p className="text-sm font-bold text-amber-400">Payment Submitted - Awaiting Worker Confirmation</p>
                       <p className="text-xs font-mono text-gray-300 mt-1">Submitted UTR: {payment.utr_number}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        An instant alert has been dispatched to {worker.users?.name ?? 'the worker'}. This screen will generate your official slip as soon as confirmed.
+                        An instant alert has been dispatched to {worker.users?.name ?? 'the worker'}. The slip will automatically print once verified.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-2 text-xs text-gray-400 py-1">
-                    <RefreshCw size={14} className="animate-spin text-neon-cyan" /> Polling worker confirmation status...
+                    <RefreshCw size={14} className="animate-spin text-cyan-400" /> Polling worker confirmation status...
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="mb-4">
                     <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-300">
-                      12-Digit Bank UTR / Transaction Reference <span className="text-neon-emerald">*</span>
+                      12-Digit Bank UTR / Transaction Reference <span className="text-emerald-400">*</span>
                     </label>
                     <input
                       value={utrNumber}
                       onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
                       placeholder="e.g. 483920194821"
-                      className="w-full rounded-xl border border-white/10 bg-base-800/80 px-4 py-3.5 text-center font-mono text-xl tracking-widest text-neon-cyan outline-none transition-all focus:border-neon-emerald/50 focus:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+                      className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3.5 text-center font-mono text-xl tracking-widest text-cyan-400 outline-none transition-all focus:border-emerald-400"
                       maxLength={12}
                     />
-                    <p className="text-[11px] text-gray-500 text-center mt-1.5">
-                      Found in your UPI App payment details (GPay, PhonePe, Paytm, etc.)
-                    </p>
                   </div>
 
                   {error && (
@@ -358,76 +393,10 @@ export function PaymentPage() {
           </>
         )}
 
-        {/* 3. STATE: PAID - 3D CoLabour Thermal POS Slip Machine Engine */}
-        {isPaid && (
-          <div className="animate-fade-in">
-            <CoLabourPrinterEngine
-              bookingId={booking.id}
-              workerName={worker.users?.name ?? 'Professional Worker'}
-              workerSkill={booking.category}
-              workerUpiId={worker.upi_id}
-              customerName="Verified Customer"
-              date={payment.paid_at || new Date().toISOString()}
-              utrNumber={payment.utr_number || 'UPI-REF-SUCCESS'}
-              totalAmount={Number(payment.amount)}
-              onDone={() => navigate('/customer/dashboard')}
-            />
-          </div>
-        )}
-
-        {/* Security Assurance Guarantee */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500 text-center">
-          <ShieldCheck size={14} className="text-neon-emerald flex-shrink-0" />
-          <span>CoLabour Direct-to-Worker UPI Protocol guarantees 0% commission deductions. Payments go straight to the professional.</span>
+          <ShieldCheck size={14} className="text-emerald-400 flex-shrink-0" />
+          <span>CoLabour Direct-to-Worker UPI Protocol guarantees 0% commission deductions.</span>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function SuccessModal({ amount }: { amount: number }) {
-  const [pieces, setPieces] = useState<{ left: number; delay: number; color: string; duration: number }[]>([]);
-
-  useEffect(() => {
-    const colors = ['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'];
-    const newPieces = Array.from({ length: 60 }, (_, i) => ({
-      left: Math.random() * 100,
-      delay: Math.random() * 0.4,
-      color: colors[i % colors.length],
-      duration: 1 + Math.random() * 1.5,
-    }));
-    setPieces(newPieces);
-  }, []);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-base-900/80 backdrop-blur-md animate-fade-in pointer-events-none">
-      {/* Confetti */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {pieces.map((p, i) => (
-          <div
-            key={i}
-            className="absolute top-0 h-3 w-3 rounded-sm"
-            style={{
-              left: `${p.left}%`,
-              backgroundColor: p.color,
-              animation: `confetti ${p.duration}s ease-out ${p.delay}s forwards`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 text-center animate-scale-in">
-        <div className="relative mx-auto mb-6">
-          <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-neon-emerald to-neon-cyan shadow-[0_0_60px_rgba(16,185,129,0.5)] mx-auto">
-            <Check size={52} className="text-white" />
-          </div>
-        </div>
-
-        <h2 className="text-3xl font-bold gradient-text-emerald-cyan mb-2">Payment Confirmed!</h2>
-        <p className="text-lg text-gray-300 mb-2">₹{amount.toFixed(2)} received by worker</p>
-        <p className="text-xs text-neon-cyan font-mono flex items-center justify-center gap-1.5">
-          <PartyPopper size={16} className="text-pink-400" /> Generating official thermal receipt slip...
-        </p>
       </div>
     </div>
   );
