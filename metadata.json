@@ -1,0 +1,10 @@
+{
+  "name": "Remix CoLabour",
+  "description": "Premium gig worker marketplace with direct bookings, instant UPI payment routing, and real-time job tracking.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
