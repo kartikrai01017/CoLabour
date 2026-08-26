@@ -1,7 +1,6 @@
 import { supabase, type WorkerWithUser, type Booking, type Payment, type User, type WorkerProfile } from './supabase';
 import { INITIAL_USERS, INITIAL_WORKERS, INITIAL_BOOKINGS, INITIAL_PAYMENTS } from './mockData';
 
-// Helper to check if real Supabase backend is configured and reachable
 export function isSupabaseConfigured(): boolean {
   const url = import.meta.env.VITE_SUPABASE_URL;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -10,7 +9,6 @@ export function isSupabaseConfigured(): boolean {
   return true;
 }
 
-// Local Storage Keys
 const LS_USERS = 'colabour_users_v1';
 const LS_WORKERS = 'colabour_workers_v1';
 const LS_BOOKINGS = 'colabour_bookings_v1';
@@ -92,16 +90,7 @@ export async function fetchWorkersList(category: string = 'all'): Promise<Worker
 
   if (isSupabaseConfigured()) {
     try {
-      let query = supabase
-        .from('worker_profiles')
-        .select(`
-          *,
-          users (
-            name,
-            email,
-            phone
-          )
-        `);
+      let query = supabase.from('worker_profiles').select('*, users(name, email, phone)');
 
       if (category !== 'all') {
         query = query.ilike('category', category);
@@ -112,7 +101,7 @@ export async function fetchWorkersList(category: string = 'all'): Promise<Worker
         return data as unknown as WorkerWithUser[];
       }
     } catch {
-      // Fallback to local store
+      // fallback
     }
   }
 
@@ -130,14 +119,7 @@ export async function fetchWorkerProfile(id: string): Promise<WorkerWithUser | n
     try {
       const { data, error } = await supabase
         .from('worker_profiles')
-        .select(`
-          *,
-          users (
-            name,
-            email,
-            phone
-          )
-        `)
+        .select('*, users(name, email, phone)')
         .or(`id.eq.${id},user_id.eq.${id}`)
         .maybeSingle();
 
@@ -379,7 +361,7 @@ export async function updateBookingStatus(bookingId: string, status: string): Pr
     try {
       await supabase.from('bookings').update({ status }).eq('id', bookingId);
     } catch {
-      // fallback handled by local storage
+      // fallback
     }
   }
 }
@@ -452,38 +434,38 @@ export async function fetchWorkerDashboardData(workerUserId: string): Promise<{
         .or(`id.eq.${workerUserId},user_id.eq.${workerUserId}`)
         .maybeSingle();
 
-      if (wp) {
-        const { data: bData } = await supabase
-          .from('bookings')
-          .select('*, customer:users(name, phone)')
-          .eq('worker_id', wp.id)
-          .order('created_at', { ascending: false });
-        const { data: pData } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('worker_id', wp.id)
-          .order('created_at', { ascending: false });
+      const profileId = wp?.id || workerUserId;
 
-        return {
-          profile: wp as WorkerProfile,
-          bookings: (bData || []) as unknown as (Booking & { customer?: { name: string; phone: string } | null })[],
-          payments: pData || [],
-        };
-      }
-    } catch {
-      // fallback
+      const { data: bData } = await supabase
+        .from('bookings')
+        .select('*, customer:users(name, phone)')
+        .or(`worker_id.eq.${profileId},worker_id.eq.${workerUserId}`)
+        .order('created_at', { ascending: false });
+
+      const { data: pData } = await supabase
+        .from('payments')
+        .select('*')
+        .or(`worker_id.eq.${profileId},worker_id.eq.${workerUserId}`)
+        .order('created_at', { ascending: false });
+
+      return {
+        profile: wp || null,
+        bookings: (bData || []) as any,
+        payments: pData || [],
+      };
+    } catch (err) {
+      console.error('Supabase worker fetch error:', err);
     }
   }
 
   const workers = getStored<WorkerWithUser[]>(LS_WORKERS, INITIAL_WORKERS);
   const users = getStored<User[]>(LS_USERS, INITIAL_USERS);
   const workerProfile = workers.find((w) => w.user_id === workerUserId || w.id === workerUserId) || null;
+  const targetId = workerProfile?.id || workerUserId;
 
-  const rawBookings = workerProfile
-    ? getStored<Booking[]>(LS_BOOKINGS, INITIAL_BOOKINGS).filter(
-        (b) => b.worker_id === workerProfile.id || b.worker_id === workerProfile.user_id
-      )
-    : [];
+  const rawBookings = getStored<Booking[]>(LS_BOOKINGS, INITIAL_BOOKINGS).filter(
+    (b) => b.worker_id === targetId || b.worker_id === workerUserId
+  );
 
   const enrichedBookings = rawBookings.map((b) => {
     const cust = users.find((u) => u.id === b.customer_id);
@@ -493,11 +475,9 @@ export async function fetchWorkerDashboardData(workerUserId: string): Promise<{
     };
   });
 
-  const payments = workerProfile
-    ? getStored<Payment[]>(LS_PAYMENTS, INITIAL_PAYMENTS).filter(
-        (p) => p.worker_id === workerProfile.id || p.worker_id === workerProfile.user_id
-      )
-    : [];
+  const payments = getStored<Payment[]>(LS_PAYMENTS, INITIAL_PAYMENTS).filter(
+    (p) => p.worker_id === targetId || p.worker_id === workerUserId
+  );
 
   return { profile: workerProfile, bookings: enrichedBookings, payments };
 }
@@ -554,7 +534,6 @@ export async function resolvePaymentDispute(paymentId: string): Promise<boolean>
   return confirmPaymentAsReceived(paymentId);
 }
 
-// Demo Auth helpers
 export function getLocalAuthUser(): { user: User | null; workerProfile: WorkerProfile | null } {
   initLocalDatabase();
   const authUser = getStored<User | null>(LS_AUTH_USER, null);
