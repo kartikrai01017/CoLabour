@@ -43,18 +43,16 @@ export function WorkerDashboardPage() {
   }, [user?.id]);
 
   const handleUpdateStatus = async (bookingId: string, newStatus: string) => {
-    // Map UI values to schema-valid values
-    const mapped = newStatus === 'accepted' ? 'confirmed' : newStatus === 'declined' ? 'cancelled' : newStatus;
     try {
       setLoadingId(bookingId);
-      await updateBookingStatus(bookingId, mapped);
+      await updateBookingStatus(bookingId, newStatus);
       
       setDashboardData((prev: any) => {
         if (!prev) return prev;
         return {
           ...prev,
           bookings: prev.bookings.map((b: any) =>
-            b.id === bookingId ? { ...b, status: mapped } : b
+            b.id === bookingId ? { ...b, status: newStatus } : b
           ),
         };
       });
@@ -135,7 +133,7 @@ export function WorkerDashboardPage() {
   const profile = dashboardData?.profile;
   const bookings = dashboardData?.bookings || [];
   const activeRequests = bookings.filter((b: any) => b.status === 'pending');
-  const ongoingJobs = bookings.filter((b: any) => b.status === 'confirmed' || b.status === 'accepted' || b.status === 'in_progress' || b.status === 'payment_submitted');
+  const ongoingJobs = bookings.filter((b: any) => b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'payment_submitted');
   const completedJobs = bookings.filter((b: any) => b.status === 'completed' || b.status === 'paid');
 
   return (
@@ -263,14 +261,14 @@ export function WorkerDashboardPage() {
                         <>
                           <button
                             disabled={loadingId === booking.id}
-                            onClick={() => handleUpdateStatus(booking.id, 'accepted')}
+                            onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
                             className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
                           >
                             {loadingId === booking.id ? 'Accepting...' : 'Accept Job'}
                           </button>
                           <button
                             disabled={loadingId === booking.id}
-                            onClick={() => handleUpdateStatus(booking.id, 'declined')}
+                            onClick={() => handleUpdateStatus(booking.id, 'cancelled')}
                             className="px-4 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 text-sm font-medium rounded-lg transition disabled:opacity-50"
                           >
                             Decline
@@ -278,7 +276,7 @@ export function WorkerDashboardPage() {
                         </>
                       )}
 
-                      {booking.status === 'accepted' && (
+                      {booking.status === 'confirmed' && (
                         <button
                           disabled={loadingId === booking.id}
                           onClick={() => handleUpdateStatus(booking.id, 'in_progress')}

@@ -121,6 +121,7 @@ export function GlobalWorkerAlert() {
     setProcessing(true);
     try {
       await rejectPaymentDispute(paymentAlert.id);
+      await updateBookingStatus(paymentAlert.booking_id, 'confirmed');
       setDismissedPayments((prev) => new Set(prev).add(paymentAlert.id));
       setPaymentAlert(null);
       await checkAlerts();
