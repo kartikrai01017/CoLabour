@@ -14,11 +14,13 @@ import { fetchBookingById, fetchWorkerProfile, fetchPaymentByBookingId, submitPa
 import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
 
 const UPI_APPS = [
-  { name: 'GPay', scheme: 'tez', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
-  { name: 'PhonePe', scheme: 'phonepe', color: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
-  { name: 'Paytm', scheme: 'paytmmp', color: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-  { name: 'BHIM', scheme: 'bhim', color: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
+  { name: 'GPay', scheme: 'tez', pkg: 'com.google.android.apps.nbu.paisa.user', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
+  { name: 'PhonePe', scheme: 'phonepe', pkg: 'com.phonepe.app', color: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
+  { name: 'Paytm', scheme: 'paytmmp', pkg: 'net.one97.paytm', color: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
+  { name: 'BHIM', scheme: 'bhim', pkg: 'in.org.npci.upiapp', color: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
 ];
+
+const UTR_REGEX = /^[0-9]{12}$/;
 
 export function PaymentPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,11 +113,12 @@ export function PaymentPage() {
   }, [id, showSuccess]);
 
   const handleConfirmPayment = async () => {
-    if (!utrNumber || utrNumber.length < 8) {
-      setError('Please enter a valid 12-digit UTR / Reference number');
+    if (!UTR_REGEX.test(utrNumber)) {
+      setError('Please enter a valid 12-digit UTR / Reference number (only digits, exactly 12)');
       return;
     }
     if (!payment || !booking || !worker) return;
+    if (payment.status === 'paid' || payment.status === 'payment_submitted') return;
 
     setSubmitting(true);
     setError('');
@@ -148,8 +151,18 @@ export function PaymentPage() {
   };
 
   const handleUpiApp = (scheme: string) => {
-    if (payment?.upi_uri) {
-      window.location.href = `intent://${payment.upi_uri.replace('upi://', '')}#Intent;scheme=${scheme};package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.google.android.apps.nbu.paisa.user;end;`;
+    if (!payment?.upi_uri) return;
+    const app = UPI_APPS.find((a) => a.scheme === scheme);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      window.open(payment.upi_uri, '_blank');
+      return;
+    }
+    if (isAndroid && app) {
+      window.location.href = `intent://${payment.upi_uri.replace('upi://', '')}#Intent;scheme=${scheme};package=${app.pkg};S.browser_fallback_url=https://play.google.com/store/apps/details?id=${app.pkg};end;`;
+    } else {
+      window.location.href = payment.upi_uri!;
     }
   };
 

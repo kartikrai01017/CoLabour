@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchWorkerDashboardData, updateBookingStatus } from '@/lib/dataService';
+import { fetchWorkerDashboardData, updateBookingStatus, confirmPaymentAsReceived, rejectPaymentDispute, fetchPaymentByBookingId } from '@/lib/dataService';
 import { 
   Briefcase, 
   CheckCircle2, 
@@ -10,7 +10,12 @@ import {
   Phone, 
   MapPin, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  XCircle,
+  Check,
+  Loader2,
+  Printer
 } from 'lucide-react';
 
 export function WorkerDashboardPage() {
@@ -38,16 +43,18 @@ export function WorkerDashboardPage() {
   }, [user?.id]);
 
   const handleUpdateStatus = async (bookingId: string, newStatus: string) => {
+    // Map UI values to schema-valid values
+    const mapped = newStatus === 'accepted' ? 'confirmed' : newStatus === 'declined' ? 'cancelled' : newStatus;
     try {
       setLoadingId(bookingId);
-      await updateBookingStatus(bookingId, newStatus);
+      await updateBookingStatus(bookingId, mapped);
       
       setDashboardData((prev: any) => {
         if (!prev) return prev;
         return {
           ...prev,
           bookings: prev.bookings.map((b: any) =>
-            b.id === bookingId ? { ...b, status: newStatus } : b
+            b.id === bookingId ? { ...b, status: mapped } : b
           ),
         };
       });
@@ -57,6 +64,61 @@ export function WorkerDashboardPage() {
     } finally {
       setLoadingId(null);
     }
+  };
+
+  const handleConfirmPayment = async (bookingId: string) => {
+    try {
+      setLoadingId(bookingId);
+      // Find payment for this booking then confirm
+      const payment = await fetchPaymentByBookingId(bookingId);
+      if (!payment) { alert('No payment found for this booking'); return; }
+      const ok = await confirmPaymentAsReceived(payment.id);
+      if (!ok) throw new Error('Confirm failed');
+      // Soundbox effect - kept
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.4);
+      } catch {}
+      setDashboardData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          bookings: prev.bookings.map((b: any) => b.id === bookingId ? { ...b, status: 'paid' } : b),
+        };
+      });
+      // reload to reflect payment table
+      setTimeout(loadData, 500);
+    } catch (err) {
+      console.error(err);
+      alert('Payment confirmation failed');
+    } finally { setLoadingId(null); }
+  };
+
+  const handleRejectPayment = async (bookingId: string) => {
+    try {
+      setLoadingId(bookingId);
+      const payment = await fetchPaymentByBookingId(bookingId);
+      if (!payment) { alert('No payment found'); return; }
+      await rejectPaymentDispute(payment.id);
+      // Reset booking to confirmed so customer can retry
+      await updateBookingStatus(bookingId, 'confirmed');
+      setDashboardData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          bookings: prev.bookings.map((b: any) => b.id === bookingId ? { ...b, status: 'confirmed' } : b),
+        };
+      });
+      alert('Payment rejected - customer can resubmit UTR.');
+      setTimeout(loadData, 500);
+    } catch (err) {
+      console.error(err);
+      alert('Reject failed');
+    } finally { setLoadingId(null); }
   };
 
   if (loading && !dashboardData) {
@@ -73,7 +135,7 @@ export function WorkerDashboardPage() {
   const profile = dashboardData?.profile;
   const bookings = dashboardData?.bookings || [];
   const activeRequests = bookings.filter((b: any) => b.status === 'pending');
-  const ongoingJobs = bookings.filter((b: any) => b.status === 'accepted' || b.status === 'in_progress');
+  const ongoingJobs = bookings.filter((b: any) => b.status === 'confirmed' || b.status === 'accepted' || b.status === 'in_progress' || b.status === 'payment_submitted');
   const completedJobs = bookings.filter((b: any) => b.status === 'completed' || b.status === 'paid');
 
   return (
@@ -237,9 +299,25 @@ export function WorkerDashboardPage() {
                       )}
 
                       {booking.status === 'payment_submitted' && (
-                        <span className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30">
-                          Payment Under Verification
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 flex items-center gap-1">
+                            <Wallet size={12} className="animate-pulse" /> UTR Submitted - Verify Manual
+                          </span>
+                          <button
+                            disabled={loadingId === booking.id}
+                            onClick={() => handleRejectPayment(booking.id)}
+                            className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 text-xs font-medium rounded-lg border border-rose-500/30 flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {loadingId === booking.id ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />} Reject
+                          </button>
+                          <button
+                            disabled={loadingId === booking.id}
+                            onClick={() => handleConfirmPayment(booking.id)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 disabled:opacity-50 shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                          >
+                            {loadingId === booking.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Confirm Payment Received ✓
+                          </button>
+                        </div>
                       )}
 
                       {booking.status === 'paid' && (
