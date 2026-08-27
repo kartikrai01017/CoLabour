@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Navigation, ShieldCheck, CheckCircle2,
-  Clock, ArrowRight, X, Radio
+  Clock, ArrowRight, X, Radio, Check
 } from 'lucide-react';
-import { NeonButton } from '@/components/ui/NeonButton';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { calculateReachTimeMinutes } from '@/lib/geo';
 
@@ -67,58 +66,59 @@ export function RadarScannerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/85 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm selection:bg-[#F59E0B] selection:text-black">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.92, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-neon-emerald/30 bg-gradient-to-b from-base-900 via-base-950 to-base-900 p-6 shadow-[0_0_50px_rgba(16,185,129,0.25)]"
+        exit={{ opacity: 0, scale: 0.92, y: 20 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        className="relative w-full max-w-lg overflow-hidden rounded-3xl border-2 sm:border-[2.5px] border-black bg-[#FAF7F2] p-5 sm:p-6 shadow-[8px_8px_0px_#000000]"
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={onCancel}
-          className="absolute top-4 right-4 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-gray-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 z-20 rounded-xl border-2 border-black bg-white p-1.5 text-black hover:bg-neutral-100 shadow-[1px_1px_0px_#000000] cursor-pointer"
         >
-          <X size={18} />
+          <X size={16} />
         </button>
 
         {/* Header */}
         <div className="text-center mb-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-neon-emerald/30 bg-neon-emerald/10 px-3 py-1 text-xs font-bold text-neon-emerald uppercase tracking-wider mb-2">
-            <Radio size={14} className="animate-pulse" /> Live GPS Radar Matching
+          <div className="inline-flex items-center gap-1.5 rounded-md border border-black bg-[#FEF3C7] px-2.5 py-0.5 text-[10px] font-black text-[#B45309] uppercase tracking-wider mb-2 shadow-[1px_1px_0px_#000000]">
+            <Radio size={12} className="animate-pulse" /> Live GPS Radar Matching
           </div>
-          <h3 className="text-xl font-bold text-white">CoLabour Proximity Dispatch</h3>
+          <h3 className="text-lg sm:text-xl font-black uppercase text-neutral-900">CoLabour Proximity Dispatch</h3>
         </div>
 
         {/* Radar Screen Area */}
-        <div className="relative mx-auto my-4 flex h-60 w-60 items-center justify-center rounded-full border-2 border-neon-emerald/40 bg-base-950 shadow-[inset_0_0_40px_rgba(16,185,129,0.2)] overflow-hidden">
+        <div className="relative mx-auto my-3 flex h-52 w-52 sm:h-56 sm:w-56 items-center justify-center rounded-full border-4 border-black bg-[#18181B] shadow-inner overflow-hidden">
           {/* Grid lines */}
-          <div className="absolute inset-0 border-b border-t border-neon-emerald/20 top-1/2 -translate-y-1/2" />
-          <div className="absolute inset-0 border-l border-r border-neon-emerald/20 left-1/2 -translate-x-1/2" />
+          <div className="absolute inset-0 border-b border-t border-neutral-700 top-1/2 -translate-y-1/2" />
+          <div className="absolute inset-0 border-l border-r border-neutral-700 left-1/2 -translate-x-1/2" />
 
           {/* Sonar concentric rings */}
-          <div className="absolute h-44 w-44 rounded-full border border-neon-emerald/30" />
-          <div className="absolute h-28 w-28 rounded-full border border-neon-emerald/40" />
-          <div className="absolute h-12 w-12 rounded-full border border-neon-emerald/50" />
+          <div className="absolute h-40 w-40 rounded-full border border-neutral-700" />
+          <div className="absolute h-24 w-24 rounded-full border border-[#F59E0B]/50" />
+          <div className="absolute h-10 w-10 rounded-full border border-[#15803D]/60" />
 
           {/* Radar Sweep Line */}
           {!isLocked && (
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
+              transition={{ repeat: Infinity, duration: 2.0, ease: 'linear' }}
               className="absolute inset-0 origin-center"
             >
-              <div className="h-1/2 w-1/2 origin-bottom-right bg-gradient-to-tl from-neon-emerald/40 to-transparent" />
+              <div className="h-1/2 w-1/2 origin-bottom-right bg-gradient-to-tl from-[#F59E0B]/50 to-transparent" />
             </motion.div>
           )}
 
           {/* Center Customer Pin */}
           <div className="relative z-10 flex flex-col items-center">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-neon-cyan shadow-[0_0_15px_rgba(6,182,212,0.8)]">
-              <Navigation size={16} className="text-base-950" />
-              <div className="absolute inset-0 animate-ping rounded-full bg-neon-cyan/40" />
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white shadow-[2px_2px_0px_#000000]">
+              <Navigation size={15} className="text-black" />
             </div>
-            <span className="mt-1 text-[10px] font-bold text-neon-cyan uppercase">You</span>
+            <span className="mt-1 text-[9px] font-black uppercase tracking-wider text-white">YOU</span>
           </div>
 
           {/* Locked Worker Target */}
@@ -128,15 +128,15 @@ export function RadarScannerModal({
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="absolute top-10 right-10 z-20 flex flex-col items-center"
+                className="absolute top-8 right-8 z-20 flex flex-col items-center"
               >
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-neon-emerald bg-base-900 shadow-[0_0_20px_rgba(16,185,129,0.9)]">
-                  <CategoryIcon size={18} className="text-neon-emerald" />
-                  <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-neon-emerald text-base-950">
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl border-2 border-black bg-[#F59E0B] shadow-[2px_2px_0px_#000000]">
+                  <CategoryIcon size={18} className="text-black" />
+                  <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-black bg-[#BBF7D0] text-[#15803D]">
                     <CheckCircle2 size={12} />
                   </div>
                 </div>
-                <span className="mt-1 rounded bg-base-900/90 px-1.5 py-0.5 text-[9px] font-bold text-neon-emerald border border-neon-emerald/40">
+                <span className="mt-1 rounded border border-black bg-white px-1.5 py-0.2 text-[8px] font-black text-black shadow-[1px_1px_0px_#000000]">
                   {distanceKm.toFixed(1)} km
                 </span>
               </motion.div>
@@ -145,73 +145,81 @@ export function RadarScannerModal({
         </div>
 
         {/* Live Distance & Reach Time Badge */}
-        <div className="mb-4 flex items-center justify-center gap-3">
-          <div className="flex items-center gap-1.5 rounded-xl border border-neon-emerald/30 bg-neon-emerald/10 px-3 py-1.5 text-xs font-semibold text-neon-emerald">
-            <Navigation size={13} /> {distanceKm.toFixed(1)} km away
+        <div className="mb-3 flex items-center justify-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-black bg-[#DCFCE7] px-2.5 py-1 text-[11px] font-black text-[#15803D] shadow-[1px_1px_0px_#000000]">
+            <Navigation size={12} /> {distanceKm.toFixed(1)} km away
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl border border-neon-cyan/30 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan">
-            <Clock size={13} /> ~{reachTime} mins reach time
+          <div className="flex items-center gap-1 rounded-lg border border-black bg-[#FEF3C7] px-2.5 py-1 text-[11px] font-black text-[#B45309] shadow-[1px_1px_0px_#000000]">
+            <Clock size={12} /> ~{reachTime} mins reach
           </div>
         </div>
 
         {/* Dynamic Status Progression Sequence */}
-        <div className="mb-5 rounded-2xl border border-white/10 bg-base-950/60 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono text-gray-400">STATUS SEQUENCE</span>
-            <span className="text-xs font-mono font-bold text-neon-emerald">{SCANNER_STEPS[stepIndex].progress}%</span>
+        <div className="mb-4 rounded-2xl border-2 border-black bg-white p-3.5 shadow-[3px_3px_0px_#000000]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-black uppercase text-neutral-500">DISPATCH SEQUENCE</span>
+            <span className="text-xs font-mono font-black text-neutral-900">{SCANNER_STEPS[stepIndex].progress}%</span>
           </div>
           {/* Progress bar */}
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10 mb-3">
+          <div className="h-2 w-full overflow-hidden rounded-full border border-black bg-neutral-100 mb-2">
             <motion.div
               initial={{ width: '0%' }}
               animate={{ width: `${SCANNER_STEPS[stepIndex].progress}%` }}
-              className="h-full bg-gradient-to-r from-neon-emerald to-neon-cyan"
+              className="h-full bg-[#F59E0B]"
             />
           </div>
-          <p className="text-sm font-medium text-white flex items-center gap-2">
+          <p className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
             {isLocked ? (
-              <CheckCircle2 size={16} className="text-neon-emerald flex-shrink-0" />
+              <CheckCircle2 size={15} className="text-[#15803D] flex-shrink-0" />
             ) : (
-              <Radio size={16} className="text-neon-cyan animate-pulse flex-shrink-0" />
+              <Radio size={15} className="text-[#B45309] animate-pulse flex-shrink-0" />
             )}
             <span>{SCANNER_STEPS[stepIndex].text}</span>
           </p>
         </div>
 
         {/* Worker summary mini card */}
-        <div className="mb-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3">
-          <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-xl border ${style.bg} ${style.border} flex items-center justify-center`}>
-              <CategoryIcon className={style.text} size={20} />
+        <div className="mb-4 flex items-center justify-between rounded-2xl border-2 border-black bg-white p-3 shadow-[2px_2px_0px_#000000]">
+          <div className="flex items-center gap-2.5">
+            <div className={`h-9 w-9 rounded-xl border border-black ${style.bg} flex items-center justify-center flex-shrink-0`}>
+              <CategoryIcon className={style.text} size={18} />
             </div>
             <div>
-              <p className="font-semibold text-sm text-white">{workerName}</p>
-              <p className="text-xs text-gray-400">{workerCategory} • {workerLocation ?? 'Nearby'}</p>
+              <p className="font-black text-xs text-neutral-900">{workerName}</p>
+              <p className="text-[10px] font-bold text-neutral-500">{workerCategory} • {workerLocation ?? 'Nearby'}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-neon-emerald">₹{workerRate}/hr</p>
-            <p className="text-[10px] text-gray-400 flex items-center gap-1 justify-end">
-              <ShieldCheck size={10} className="text-neon-emerald" /> 0% Platform Fee
+            <p className="text-xs font-mono font-black text-neutral-900">₹{workerRate}/hr</p>
+            <p className="text-[9px] font-black text-[#15803D]">
+              0% Platform Fee
             </p>
           </div>
         </div>
 
         {/* Action Button */}
-        <NeonButton
-          fullWidth
-          size="lg"
-          variant={isLocked ? 'emerald' : 'cyan'}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          type="button"
           onClick={onConfirm}
           disabled={!isLocked}
+          className="w-full rounded-2xl border-2 border-black bg-[#F59E0B] hover:bg-[#E68A00] py-3 text-xs sm:text-sm font-black uppercase text-black shadow-[3px_3px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
         >
           {isLocked ? (
-            <>Lock In & Proceed to Payment Gateway <ArrowRight size={18} /></>
+            <>
+              <span>Lock In & Proceed to Payment</span>
+              <ArrowRight size={16} className="stroke-[3]" />
+            </>
           ) : (
-            <>Acquiring Satellite Lock...</>
+            <>
+              <Radio size={14} className="animate-pulse" />
+              <span>Acquiring Satellite Lock...</span>
+            </>
           )}
-        </NeonButton>
+        </motion.button>
       </motion.div>
     </div>
   );
 }
+
