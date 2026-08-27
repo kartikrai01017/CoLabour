@@ -4,21 +4,21 @@ import { Star } from 'lucide-react';
 export function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div className="flex items-center gap-1">
-      <Star size={size} className="fill-amber-400 text-amber-400" />
-      <span className="font-semibold text-amber-400">{rating.toFixed(1)}</span>
+      <Star size={size} className="fill-nb-accent-yellow text-nb-accent-yellow" />
+      <span className="font-bold text-nb-ink">{rating.toFixed(1)}</span>
     </div>
   );
 }
 
 export function GlowOrb({ className }: { className: string }) {
-  return <div className={`glow-orb ${className}`} />;
+  return <div className={`absolute rounded-full opacity-5 pointer-events-none blur-[80px] bg-nb-ink ${className}`} />;
 }
 
 export function SectionTitle({ children, subtitle }: { children: ReactNode; subtitle?: string }) {
   return (
     <div className="mb-8">
-      <h2 className="text-3xl font-bold gradient-text-emerald-cyan sm:text-4xl">{children}</h2>
-      {subtitle && <p className="mt-2 text-gray-400">{subtitle}</p>}
+      <h2 className="text-3xl font-bold text-nb-ink sm:text-4xl">{children}</h2>
+      {subtitle && <p className="mt-2 text-nb-text-muted">{subtitle}</p>}
     </div>
   );
 }

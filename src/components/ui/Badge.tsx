@@ -8,16 +8,16 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'gray', className = '' }: BadgeProps) {
   const variants: Record<string, string> = {
-    emerald: 'bg-neon-emerald/10 text-neon-emeraldGlow border-neon-emerald/30',
-    cyan: 'bg-neon-cyan/10 text-neon-cyanGlow border-neon-cyan/30',
-    violet: 'bg-neon-violet/10 text-neon-violetGlow border-neon-violet/30',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    red: 'bg-red-500/10 text-red-400 border-red-500/30',
-    gray: 'bg-white/5 text-gray-400 border-white/10',
+    emerald: 'bg-nb-accent-green/20 text-nb-ink border-nb-accent-green',
+    cyan: 'bg-nb-accent-blue/20 text-nb-ink border-nb-accent-blue',
+    violet: 'bg-nb-accent-pink/20 text-nb-ink border-nb-accent-pink',
+    amber: 'bg-nb-accent-yellow/20 text-nb-ink border-nb-accent-yellow',
+    red: 'bg-nb-accent-red/20 text-white border-nb-accent-red',
+    gray: 'bg-nb-surface-muted text-nb-text-muted border-nb-ink/20',
   };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${variants[variant]} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-nb-sm border-[1.5px] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${variants[variant]} ${className}`}>
       {children}
     </span>
   );
