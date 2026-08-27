@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Printer, Download, Sparkles, ShieldCheck, QrCode, ArrowRight } from 'lucide-react';
+
+interface CoLabourPrinterEngineProps {
+  bookingId: string;
+  workerName: string;
+  workerSkill: string;
+  workerUpiId?: string;
+  customerName?: string;
+  date: string;
+  utrNumber?: string | null;
+  totalAmount: number;
+  onDone?: () => void;
+}
+
+export function CoLabourPrinterEngine({
+  bookingId,
+  workerName,
+  workerSkill,
+  workerUpiId,
+  customerName = 'Verified Customer',
+  date,
+  utrNumber,
+  totalAmount,
+  onDone,
+}: CoLabourPrinterEngineProps) {
+  const [isPrinted, setIsPrinted] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const handleDispense = () => {
+    if (isPrinting || isPrinted) return;
+    setIsPrinting(true);
+    setTimeout(() => {
+      setIsPrinting(false);
+      setIsPrinted(true);
+    }, 1200);
+  };
+
+  const handleBrowserPrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="w-full flex flex-col items-center justify-center my-6">
+      {/* 3D Hardware POS Terminal Chassis */}
+      <div className="relative w-full max-w-md bg-[#1e293b] rounded-2xl border-2 border-black shadow-[6px_6px_0px_0px_#000] p-6 overflow-hidden">
+        {/* Top Header & Indicator LEDs */}
+        <div className="flex items-center justify-between pb-4 border-b-2 border-black/40">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-400 border border-black animate-pulse" />
+              <span className="w-3 h-3 rounded-full bg-cyan-400 border border-black" />
+              <span className="w-3 h-3 rounded-full bg-pink-400 border border-black" />
+            </div>
+            <span className="text-xs font-mono font-black tracking-widest text-white uppercase">
+              COLABOUR-POS // 4.2K
+            </span>
+          </div>
+          <span className="text-[10px] font-mono font-black uppercase bg-emerald-400 text-black px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_#000]">
+            ONLINE
+          </span>
+        </div>
+
+        {/* Paper Dispense Feed Slot */}
+        <div className="relative mt-4 mb-2 bg-[#0b0f19] h-5 rounded-lg border-2 border-black shadow-inner flex items-center justify-center">
+          <div className="w-48 h-1 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+        </div>
+
+        {/* Dispense Trigger Section */}
+        {!isPrinted && !isPrinting && (
+          <div className="py-6 flex flex-col items-center text-center animate-fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-amber-300 border-2 border-black flex items-center justify-center mb-3 text-black shadow-[3px_3px_0px_0px_#000]">
+              <Printer size={32} className="animate-bounce" />
+            </div>
+            <h3 className="text-lg font-black text-white mb-1">CoLabour Thermal POS Ready</h3>
+            <p className="text-xs text-gray-300 max-w-xs mb-5 font-medium">
+              Payment confirmed by worker. Push the button to dispense your tamper-proof digital work slip.
+            </p>
+
+            {/* Interactive Dispense Button */}
+            <button
+              onClick={handleDispense}
+              className="px-8 py-3.5 rounded-xl font-black text-black text-sm bg-pink-400 border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider"
+            >
+              <Sparkles size={18} className="animate-spin text-black" />
+              ⚡ TAP TO DISPENSE SLIP
+            </button>
+          </div>
+        )}
+
+        {/* Printing in progress state */}
+        {isPrinting && (
+          <div className="py-8 flex flex-col items-center justify-center text-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+              className="w-12 h-12 rounded-full border-4 border-pink-400 border-t-transparent mb-3"
+            />
+            <p className="text-sm font-mono text-pink-400 animate-pulse font-black">
+              PRINTING THERMAL SLIP...
+            </p>
+            <p className="text-[11px] font-mono text-gray-300 mt-1">Ejecting encrypted thermal receipt...</p>
+          </div>
+        )}
+
+        {/* Ejected Thermal POS Receipt Paper with Paper-Tear Edge */}
+        <AnimatePresence>
+          {isPrinted && (
+            <motion.div
+              initial={{ y: -80, opacity: 0, scaleY: 0.2 }}
+              animate={{ y: 0, opacity: 1, scaleY: 1 }}
+              transition={{ duration: 0.8, type: 'spring', bounce: 0.25 }}
+              className="relative mt-2 origin-top"
+            >
+              {/* Paper body styling */}
+              <div
+                id="colabour-receipt-print"
+                className="bg-[#fafafa] text-neutral-900 font-mono p-5 rounded-sm shadow-2xl relative border-t-4 border-dashed border-gray-400 select-text"
+                style={{
+                  clipPath: 'polygon(0% 0%, 100% 0%, 100% 98%, 97% 100%, 94% 98%, 91% 100%, 88% 98%, 85% 100%, 82% 98%, 79% 100%, 76% 98%, 73% 100%, 70% 98%, 67% 100%, 64% 98%, 61% 100%, 58% 98%, 55% 100%, 52% 98%, 49% 100%, 46% 98%, 43% 100%, 40% 98%, 37% 100%, 34% 98%, 31% 100%, 28% 98%, 25% 100%, 22% 98%, 19% 100%, 16% 98%, 13% 100%, 10% 98%, 7% 100%, 4% 98%, 0% 100%)',
+                  paddingBottom: '2.5rem',
+                }}
+              >
+                {/* Header of the slip */}
+                <div className="text-center pb-3 border-b-2 border-dashed border-neutral-300">
+                  <div className="flex items-center justify-center gap-1 font-black text-xl tracking-tight text-neutral-900">
+                    <span>⚡ COLABOUR</span>
+                  </div>
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-sans">
+                    On-Demand Skilled Services Platform
+                  </p>
+                  <p className="text-[9px] text-neutral-400 mt-0.5">TAX INVOICE / SERVICE RECEIPT</p>
+                </div>
+
+                {/* Slip Details Grid */}
+                <div className="py-3 text-xs space-y-1.5 border-b border-dashed border-neutral-300">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">BOOKING ID:</span>
+                    <span className="font-bold text-neutral-800 font-mono">#{bookingId.slice(0, 8).toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">DATE & TIME:</span>
+                    <span className="text-neutral-800">{new Date(date).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">CUSTOMER:</span>
+                    <span className="text-neutral-800 font-medium">{customerName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">WORKER:</span>
+                    <span className="text-neutral-800 font-bold">{workerName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">CATEGORY:</span>
+                    <span className="text-neutral-800">{workerSkill}</span>
+                  </div>
+                  {workerUpiId && (
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">WORKER UPI:</span>
+                      <span className="text-neutral-800 font-mono">{workerUpiId}</span>
+                    </div>
+                  )}
+                  {utrNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">BANK UTR:</span>
+                      <span className="font-bold text-neutral-900 font-mono">{utrNumber}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">PAYMENT STATUS:</span>
+                    <span className="font-bold text-emerald-700 uppercase">CONFIRMED (PAID)</span>
+                  </div>
+                </div>
+
+                {/* Amount Calculation */}
+                <div className="py-3 border-b-2 border-dashed border-neutral-300">
+                  <div className="flex justify-between text-xs text-neutral-600 mb-1">
+                    <span>Labor Service Charge:</span>
+                    <span>₹{totalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-neutral-600 mb-1">
+                    <span>Platform Commission:</span>
+                    <span>₹0.00 (Zero Fee)</span>
+                  </div>
+                  <div className="flex justify-between text-base font-black text-neutral-900 pt-1 border-t border-dotted border-neutral-300">
+                    <span>TOTAL PAID:</span>
+                    <span>₹{totalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Verification QR and Security Stamp */}
+                <div className="pt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-12 bg-neutral-100 border border-neutral-300 rounded p-1 flex items-center justify-center">
+                      <QrCode size={36} className="text-neutral-800" />
+                    </div>
+                    <div className="text-[9px] text-neutral-500 leading-tight">
+                      <p className="font-bold text-neutral-700">VERIFIED SLIP</p>
+                      <p>Scan to verify authenticity</p>
+                      <p className="text-[8px] text-neutral-400 mt-0.5 font-mono">AUTH-{bookingId.slice(0, 6)}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-300">
+                      <ShieldCheck size={12} /> SECURED
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer message */}
+                <p className="text-center text-[9px] text-neutral-400 mt-4 tracking-wider uppercase">
+                  *** THANK YOU FOR CHOOSING COLABOUR ***
+                </p>
+              </div>
+
+              {/* Actions below paper */}
+              <div className="mt-5 flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleBrowserPrint}
+                  className="flex-1 py-2.5 px-4 rounded-xl border-2 border-black bg-white hover:bg-gray-100 text-black text-xs font-black flex items-center justify-center gap-2 shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-all"
+                >
+                  <Download size={14} /> Print / Save PDF
+                </button>
+                {onDone && (
+                  <button
+                    onClick={onDone}
+                    className="flex-1 py-2.5 px-4 rounded-xl border-2 border-black bg-emerald-400 hover:bg-emerald-300 text-black text-xs font-black flex items-center justify-center gap-2 shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-all"
+                  >
+                    Back to Dashboard <ArrowRight size={14} />
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,285 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-[#fafafa] text-slate-900 font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgba(26, 34, 52, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-strong {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass-hover:hover {
+    background: rgba(36, 45, 68, 0.5);
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.15), 0 0 30px -5px rgba(6, 182, 212, 0.1);
+  }
+
+  .neon-text {
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .neon-text-cyan {
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.5), 0 0 20px rgba(6, 182, 212, 0.3);
+  }
+
+  .neon-border {
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3), 0 0 20px rgba(16, 185, 129, 0.15);
+  }
+
+  .neon-border-cyan {
+    box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.3), 0 0 20px rgba(6, 182, 212, 0.15);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #10B981 0%, #06B6D4 50%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .gradient-text-emerald-cyan {
+    background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #colabour-receipt-print, #colabour-receipt-print * {
+    visibility: visible;
+  }
+  #colabour-receipt-print {
+    position: fixed;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%);
+    width: 340px;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    clip-path: none !important;
+    padding: 16px !important;
+    margin: 0 auto;
+    z-index: 999999;
+  }
+}
+
+/* Custom Leaflet Map styling for Live Work Radar */
+.colabour-leaflet-map .leaflet-control-zoom {
+  border: 2px solid #000 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 2px 2px 0px 0px #000 !important;
+}
+
+.colabour-leaflet-map .leaflet-control-zoom a {
+  background: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 900 !important;
+}
+
+.colabour-leaflet-map .leaflet-control-zoom a:hover {
+  background: #fef08a !important;
+}
+
+.colabour-leaflet-popup .leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 18px !important;
+  border: 2px solid #000000 !important;
+  background: #ffffff !important;
+  box-shadow: 4px 4px 0px 0px #000000 !important;
+  overflow: hidden !important;
+}
+
+.colabour-leaflet-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: normal !important;
+}
+
+.colabour-leaflet-popup .leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.colabour-leaflet-popup .leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  color: #000 !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  z-index: 10 !important;
+}
+
+@keyframes radar-sonar-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.animate-radar-sonar {
+  animation: radar-sonar-pulse 2.5s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+@keyframes radar-sweep-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep-spin 5s linear infinite;
+}
+
+/* ==========================================================================
+   CoLabour Dynamic Config-Driven Splash Screen Engine
+   ========================================================================== */
+
+.splash-letter-dynamic {
+  display: inline-block;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
+  animation: splash-dynamic-assemble 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes splash-dynamic-assemble {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--start-x, 0px), var(--start-y, 0px), 0) scale(1.35) rotate(var(--start-rot, 0deg));
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+}
+
+/* Dynamic floating & breathing animation */
+@keyframes splash-float-breathe {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    filter: drop-shadow(0 4px 12px rgba(13, 148, 136, 0.25));
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+    filter: drop-shadow(0 8px 24px rgba(45, 212, 191, 0.45));
+  }
+}
+
+.splash-float-breathe {
+  animation: splash-float-breathe 2.2s ease-in-out infinite;
+}
+
+/* Scanning progress laser bar */
+@keyframes splash-laser-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.splash-glow-progress {
+  animation: splash-laser-sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Respect user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .splash-letter-dynamic {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  .splash-float-breathe {
+    animation: none !important;
+    transform: none !important;
+  }
+  .splash-glow-progress {
+    animation: none !important;
+  }
+}
+
+
