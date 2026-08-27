@@ -41,7 +41,10 @@ export async function fetchWorkersList(category: string = 'all'): Promise<Worker
   let query = supabase
     .from('worker_profiles')
     .select('*, users!inner(name, email, phone)')
+<<<<<<< HEAD
     .eq('is_verified', true)
+=======
+>>>>>>> origin/main
     .order('created_at', { ascending: false });
 
   if (category && category !== 'all') {
@@ -61,7 +64,10 @@ export async function fetchWorkerProfile(id: string): Promise<WorkerWithUser | n
     .from('worker_profiles')
     .select('*, users!inner(name, email, phone)')
     .or(`id.eq.${id},user_id.eq.${id}`)
+<<<<<<< HEAD
     .eq('is_verified', true)
+=======
+>>>>>>> origin/main
     .maybeSingle();
 
   if (error) {
@@ -80,6 +86,7 @@ export async function createNewBooking(params: {
   total_amount: number;
   notes?: string;
 }): Promise<Booking> {
+<<<<<<< HEAD
   // Backend guard: reject booking attempts if requester has role === 'worker'
   const { data: requester, error: requesterError } = await supabase
     .from('users')
@@ -95,6 +102,8 @@ export async function createNewBooking(params: {
     throw new Error('Worker accounts are restricted from booking services. Only customers can book.');
   }
 
+=======
+>>>>>>> origin/main
   const { data, error } = await supabase
     .from('bookings')
     .insert({

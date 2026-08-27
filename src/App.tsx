@@ -1,9 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
+<<<<<<< HEAD
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
 import { SplashScreen } from '@/components/SplashScreen';
+=======
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Navbar } from '@/components/Navbar';
+>>>>>>> origin/main
 import { GlobalWorkerAlert } from '@/components/GlobalWorkerAlert';
 import { CoLabourAIWidget } from '@/components/CoLabourAIWidget';
 import { LandingPage } from '@/pages/LandingPage';
@@ -18,6 +23,7 @@ import { AdminPage } from '@/pages/AdminPage';
 
 function App() {
   return (
+<<<<<<< HEAD
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
@@ -91,6 +97,64 @@ function App() {
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
+=======
+    <AuthProvider>
+      <BrowserRouter>
+        <GlobalWorkerAlert />
+        <CoLabourAIWidget />
+        <div className="min-h-screen bg-base text-gray-100">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/workers" element={<WorkersDirectoryPage />} />
+            <Route path="/workers/:id" element={<WorkerProfilePage />} />
+            <Route
+              path="/book/:id"
+              element={
+                <ProtectedRoute>
+                  <BookingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment/:id"
+              element={
+                <ProtectedRoute>
+                  <PaymentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/worker/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['worker']}>
+                  <WorkerDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminPage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </AuthProvider>
+>>>>>>> origin/main
   );
 }
 

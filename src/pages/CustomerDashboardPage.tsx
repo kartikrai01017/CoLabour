@@ -2,16 +2,27 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar, MapPin, Wallet, Clock, Loader2, ArrowRight, Briefcase, CheckCircle,
+<<<<<<< HEAD
   Receipt, AlertCircle, Eye, X, Navigation, Phone, ShieldCheck
 } from 'lucide-react';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
 import { AnimatedCounter } from '@/components/ui/Shared';
+=======
+  Receipt, AlertCircle, Eye, X
+} from 'lucide-react';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { NeonButton } from '@/components/ui/NeonButton';
+import { Badge } from '@/components/ui/Badge';
+import { GlowOrb, AnimatedCounter } from '@/components/ui/Shared';
+import { type Booking, type Payment } from '@/lib/supabase';
+>>>>>>> origin/main
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
 import { fetchCustomerDashboardData } from '@/lib/dataService';
 import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
 
+<<<<<<< HEAD
 interface BookingWithWorker {
   id: string;
   customer_id: string;
@@ -39,6 +50,13 @@ interface PaymentWithBooking {
   status: 'pending' | 'payment_submitted' | 'paid' | 'failed';
   paid_at?: string;
   utr_number?: string;
+=======
+interface BookingWithWorker extends Booking {
+  worker?: { id: string; category: string; hourly_rate: number; users?: { name: string } | null } | null;
+}
+
+interface PaymentWithBooking extends Payment {
+>>>>>>> origin/main
   bookings?: { id: string; category: string } | null;
 }
 
@@ -53,8 +71,13 @@ export function CustomerDashboardPage() {
     if (!user) return;
     try {
       const data = await fetchCustomerDashboardData(user.id);
+<<<<<<< HEAD
       setBookings((data.bookings as unknown as BookingWithWorker[]) || []);
       setPayments((data.payments as unknown as PaymentWithBooking[]) || []);
+=======
+      setBookings(data.bookings as BookingWithWorker[]);
+      setPayments(data.payments as PaymentWithBooking[]);
+>>>>>>> origin/main
     } catch {
       // ignore
     } finally {
@@ -77,12 +100,18 @@ export function CustomerDashboardPage() {
 
   const activeBookings = bookings.filter((b) => ['pending', 'confirmed', 'in_progress', 'payment_submitted'].includes(b.status));
   const completedBookings = bookings.filter((b) => b.status === 'paid' || b.status === 'completed');
+<<<<<<< HEAD
   const totalSpent = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const pendingPayments = payments.filter((p) => p.status === 'pending' || p.status === 'payment_submitted');
 
   const incomingWorkerBooking = bookings.find((b) => b.status === 'confirmed' || b.status === 'in_progress');
   const displayName = (user as any)?.full_name || (user as any)?.name || 'User';
 
+=======
+  const totalSpent = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amount), 0);
+  const pendingPayments = payments.filter((p) => p.status === 'pending' || p.status === 'payment_submitted');
+
+>>>>>>> origin/main
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16">
@@ -92,6 +121,7 @@ export function CustomerDashboardPage() {
   }
 
   return (
+<<<<<<< HEAD
     <div className="relative min-h-screen bg-transparent pt-24 pb-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
@@ -105,12 +135,25 @@ export function CustomerDashboardPage() {
             <p className="text-sm font-semibold text-gray-700 mt-1">
               Welcome back, <span className="text-black font-black underline decoration-emerald-500">{displayName}</span>
             </p>
+=======
+    <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
+      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
+      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+          <div>
+            <h1 className="text-2xl font-bold text-white">My Customer Dashboard</h1>
+            <p className="text-sm text-gray-400">Welcome back, {user?.name}</p>
+>>>>>>> origin/main
           </div>
           <Link to="/workers">
             <NeonButton variant="emerald"><Briefcase size={16} /> Book a Worker</NeonButton>
           </Link>
         </div>
 
+<<<<<<< HEAD
         {/* Live Tracking Map on Active Booking */}
         {incomingWorkerBooking && (
           <div className="mb-8 border-2 border-black bg-gradient-to-r from-emerald-50 via-teal-50 to-white rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] relative overflow-hidden">
@@ -184,6 +227,8 @@ export function CustomerDashboardPage() {
           </div>
         )}
 
+=======
+>>>>>>> origin/main
         {/* Stats */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard icon={Calendar} label="Active Bookings" value={activeBookings.length} color="cyan" />
@@ -194,6 +239,7 @@ export function CustomerDashboardPage() {
 
         {/* Pending payments alert */}
         {pendingPayments.length > 0 && (
+<<<<<<< HEAD
           <div className="mb-8 bg-amber-50 border-2 border-black p-5 rounded-2xl shadow-[5px_5px_0px_0px_#000] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-amber-400 border-2 border-black rounded-xl text-black shadow-[2px_2px_0px_0px_#000]">
@@ -229,6 +275,36 @@ export function CustomerDashboardPage() {
                   <p className="text-gray-600 font-bold mb-4">No active bookings right now</p>
                   <Link to="/workers"><NeonButton variant="ghost" size="sm">Browse Verified Workers</NeonButton></Link>
                 </div>
+=======
+          <GlassCard className="mb-6 border-amber-500/30 p-4 animate-slide-up">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={20} className="text-amber-400 animate-pulse" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment action(s)</p>
+                <p className="text-xs text-gray-400">Complete or track your UPI payment to settle your booking</p>
+              </div>
+              {pendingPayments[0] && (
+                <Link to={`/payment/${pendingPayments[0].booking_id}`}>
+                  <NeonButton size="sm" variant="emerald">Open Payment Gateway <ArrowRight size={14} /></NeonButton>
+                </Link>
+              )}
+            </div>
+          </GlassCard>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Active bookings */}
+          <div>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
+              <Clock size={18} className="text-neon-cyan" /> Active Bookings
+            </h2>
+            <div className="space-y-4">
+              {activeBookings.length === 0 ? (
+                <GlassCard className="p-8 text-center">
+                  <p className="text-gray-500 mb-4">No active bookings</p>
+                  <Link to="/workers"><NeonButton variant="ghost" size="sm">Browse Workers</NeonButton></Link>
+                </GlassCard>
+>>>>>>> origin/main
               ) : (
                 activeBookings.map((booking) => (
                   <BookingCard key={booking.id} booking={booking} />
@@ -239,6 +315,7 @@ export function CustomerDashboardPage() {
 
           {/* Completed & receipts */}
           <div>
+<<<<<<< HEAD
             <div className="flex items-center justify-between mb-4">
               <h2 className="flex items-center gap-2 text-xl font-black text-black">
                 <Receipt size={20} className="text-black" /> History & Official POS Slips
@@ -252,6 +329,14 @@ export function CustomerDashboardPage() {
                 <div className="bg-white border-2 border-black rounded-2xl p-8 text-center text-gray-600 font-bold shadow-[4px_4px_0px_0px_#000]">
                   No completed bookings yet
                 </div>
+=======
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
+              <Receipt size={18} className="text-neon-emerald" /> History & Official POS Slips
+            </h2>
+            <div className="space-y-4">
+              {completedBookings.length === 0 ? (
+                <GlassCard className="p-8 text-center text-gray-500">No completed bookings yet</GlassCard>
+>>>>>>> origin/main
               ) : (
                 completedBookings.map((booking) => {
                   const p = payments.find((pay) => pay.booking_id === booking.id);
@@ -268,27 +353,44 @@ export function CustomerDashboardPage() {
             </div>
           </div>
         </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
       </div>
 
       {/* Slip Modal */}
       {selectedSlip && (
         <div
+<<<<<<< HEAD
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
+=======
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/85 backdrop-blur-md overflow-y-auto"
+>>>>>>> origin/main
           onClick={() => setSelectedSlip(null)}
         >
           <div className="relative w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSelectedSlip(null)}
+<<<<<<< HEAD
               className="absolute top-2 right-2 z-20 rounded-full bg-white p-2 text-black hover:bg-gray-200 border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+=======
+              className="absolute top-2 right-2 z-20 rounded-full bg-base-800 p-2 text-gray-400 hover:text-white border border-white/10"
+>>>>>>> origin/main
             >
               <X size={18} />
             </button>
             <CoLabourPrinterEngine
               bookingId={selectedSlip.booking.id}
+<<<<<<< HEAD
               workerName={selectedSlip.booking.worker?.users?.name || selectedSlip.booking.worker?.users?.full_name || 'Professional Worker'}
               workerSkill={selectedSlip.booking.category}
               customerName={displayName}
+=======
+              workerName={selectedSlip.booking.worker?.users?.name ?? 'Professional Worker'}
+              workerSkill={selectedSlip.booking.category}
+              customerName={user?.name ?? 'Verified Customer'}
+>>>>>>> origin/main
               date={selectedSlip.payment?.paid_at || selectedSlip.booking.scheduled_at}
               utrNumber={selectedSlip.payment?.utr_number || 'UPI-OFFICIAL-UTR'}
               totalAmount={Number(selectedSlip.booking.total_amount)}
@@ -303,6 +405,7 @@ export function CustomerDashboardPage() {
 
 function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; label: string; value: string | number; color: string }) {
   const colors: Record<string, string> = {
+<<<<<<< HEAD
     emerald: 'bg-emerald-100 text-emerald-900 border-2 border-black',
     cyan: 'bg-cyan-100 text-cyan-900 border-2 border-black',
     violet: 'bg-purple-100 text-purple-900 border-2 border-black',
@@ -316,6 +419,21 @@ function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; la
       <p className="text-2xl sm:text-3xl font-black text-black tracking-tight">{typeof value === 'number' ? <AnimatedCounter value={value} /> : value}</p>
       <p className="text-xs font-bold text-gray-600 mt-1 uppercase tracking-wide">{label}</p>
     </div>
+=======
+    emerald: 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/30',
+    cyan: 'text-neon-cyan bg-neon-cyan/10 border-neon-cyan/30',
+    violet: 'text-neon-violet bg-neon-violet/10 border-neon-violet/30',
+    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+  };
+  return (
+    <GlassCard className="p-5">
+      <div className={`mb-3 inline-flex rounded-xl border p-2.5 ${colors[color]}`}>
+        <Icon size={20} />
+      </div>
+      <p className="text-2xl font-bold text-white">{typeof value === 'number' ? <AnimatedCounter value={value} /> : value}</p>
+      <p className="text-xs text-gray-500 mt-1">{label}</p>
+    </GlassCard>
+>>>>>>> origin/main
   );
 }
 
@@ -338,6 +456,7 @@ function BookingCard({
     cancelled: 'gray',
   };
   const variant = statusColors[booking.status] ?? 'gray';
+<<<<<<< HEAD
   const Icon = (CATEGORY_ICONS as any)[booking.category] ?? Briefcase;
   const style = getCategoryStyle(booking.category);
   const workerDisplayName = booking.worker?.users?.name || booking.worker?.users?.full_name || 'Worker';
@@ -352,10 +471,26 @@ function BookingCard({
           <div>
             <h3 className="font-black text-black text-base">{workerDisplayName}</h3>
             <p className="text-xs font-bold text-gray-600">{booking.category}</p>
+=======
+  const Icon = CATEGORY_ICONS[booking.category] ?? Briefcase;
+  const style = getCategoryStyle(booking.category);
+
+  return (
+    <GlassCard hover className="p-5 animate-slide-up">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={`h-12 w-12 rounded-xl border ${style.bg} ${style.border} flex items-center justify-center`}>
+            <Icon className={style.text} size={24} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">{booking.worker?.users?.name ?? 'Worker'}</h3>
+            <p className="text-xs text-gray-400">{booking.category}</p>
+>>>>>>> origin/main
           </div>
         </div>
         <Badge variant={variant}>{booking.status === 'confirmed' ? 'Accepted' : booking.status.replace('_', ' ')}</Badge>
       </div>
+<<<<<<< HEAD
 
       <div className="space-y-1.5 text-xs font-semibold text-gray-700 mb-4 bg-gray-50 border border-black/10 p-3 rounded-xl">
         <div className="flex items-center gap-2"><Calendar size={14} className="text-black" /> {new Date(booking.scheduled_at).toLocaleString()}</div>
@@ -377,11 +512,36 @@ function BookingCard({
         {booking.status === 'payment_submitted' && (
           <Link to={`/payment/${booking.id}`} className="w-full">
             <NeonButton size="sm" variant="cyan" fullWidth>Track Verification <ArrowRight size={14} /></NeonButton>
+=======
+      <div className="space-y-1.5 text-sm text-gray-400 mb-3">
+        <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(booking.scheduled_at).toLocaleString()}</div>
+        <div className="flex items-center gap-2"><MapPin size={14} /> {booking.address}</div>
+        <div className="flex items-center gap-2"><Wallet size={14} /> ₹{Number(booking.total_amount).toFixed(2)}</div>
+      </div>
+      <div className="flex gap-2">
+        {booking.status === 'pending' && (
+          <Link to={`/payment/${booking.id}`}>
+            <NeonButton size="sm" variant="amber">Waiting for Acceptance <ArrowRight size={14} /></NeonButton>
+          </Link>
+        )}
+        {booking.status === 'confirmed' && (
+          <Link to={`/payment/${booking.id}`}>
+            <NeonButton size="sm" variant="emerald">Pay Worker via UPI <ArrowRight size={14} /></NeonButton>
+          </Link>
+        )}
+        {booking.status === 'payment_submitted' && (
+          <Link to={`/payment/${booking.id}`}>
+            <NeonButton size="sm" variant="cyan">Track Verification <ArrowRight size={14} /></NeonButton>
+>>>>>>> origin/main
           </Link>
         )}
         {showReceipt && (booking.status === 'paid' || booking.status === 'completed') && (
           <div className="flex items-center justify-between w-full">
+<<<<<<< HEAD
             <span className="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-400 font-bold">
+=======
+            <span className="flex items-center gap-1.5 text-xs text-neon-emerald font-medium">
+>>>>>>> origin/main
               <CheckCircle size={14} /> Payment Settled
             </span>
             {onViewSlip && (
@@ -392,6 +552,10 @@ function BookingCard({
           </div>
         )}
       </div>
+<<<<<<< HEAD
     </div>
+=======
+    </GlassCard>
+>>>>>>> origin/main
   );
 }

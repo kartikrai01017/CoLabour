@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -21,6 +22,21 @@ import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWorkerProfile } from '@/lib/dataService';
 import { calculateDynamicRating, getTradeMedia } from '@/lib/ratings';
+=======
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+  Star, MapPin, Clock, ShieldCheck, ArrowLeft, ArrowRight, Loader2, Briefcase, Wallet, MessageSquare,
+} from 'lucide-react';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { NeonButton } from '@/components/ui/NeonButton';
+import { Badge } from '@/components/ui/Badge';
+import { GlowOrb, StarRating } from '@/components/ui/Shared';
+import { type WorkerWithUser } from '@/lib/supabase';
+import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWorkerProfile } from '@/lib/dataService';
+>>>>>>> origin/main
 
 export function WorkerProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +45,7 @@ export function WorkerProfilePage() {
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+<<<<<<< HEAD
   // Reviews state for dynamic updates
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewerName, setReviewerName] = useState('');
@@ -38,6 +55,8 @@ export function WorkerProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState(false);
 
+=======
+>>>>>>> origin/main
   useEffect(() => {
     let mounted = true;
     async function fetchWorker() {
@@ -47,11 +66,14 @@ export function WorkerProfilePage() {
         const data = await fetchWorkerProfile(id);
         if (mounted) {
           setWorker(data);
+<<<<<<< HEAD
           if (data?.reviews && data.reviews.length > 0) {
             setReviews(data.reviews);
           } else {
             setReviews([]);
           }
+=======
+>>>>>>> origin/main
         }
       } catch {
         if (mounted) setWorker(null);
@@ -66,6 +88,7 @@ export function WorkerProfilePage() {
     };
   }, [id]);
 
+<<<<<<< HEAD
   // Dynamic Rating calculation
   const ratingData = useMemo(() => {
     return calculateDynamicRating(
@@ -75,6 +98,8 @@ export function WorkerProfilePage() {
     );
   }, [reviews, worker]);
 
+=======
+>>>>>>> origin/main
   const handleBook = () => {
     if (!user) {
       navigate('/login');
@@ -87,6 +112,7 @@ export function WorkerProfilePage() {
     navigate(`/book/${id}`);
   };
 
+<<<<<<< HEAD
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewerName.trim() || !reviewComment.trim()) return;
@@ -119,12 +145,19 @@ export function WorkerProfilePage() {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16 bg-transparent">
         <Loader2 size={36} className="animate-spin text-black" />
+=======
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center pt-16">
+        <Loader2 size={32} className="animate-spin text-neon-emerald" />
+>>>>>>> origin/main
       </div>
     );
   }
 
   if (!worker) {
     return (
+<<<<<<< HEAD
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4 bg-transparent">
         <p className="text-base font-bold text-gray-700">Worker not found.</p>
         <Link to="/workers">
@@ -132,12 +165,18 @@ export function WorkerProfilePage() {
             Browse Workers
           </button>
         </Link>
+=======
+      <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
+        <p className="text-gray-400">Worker not found.</p>
+        <Link to="/workers"><NeonButton variant="ghost">Browse Workers</NeonButton></Link>
+>>>>>>> origin/main
       </div>
     );
   }
 
   const Icon = CATEGORY_ICONS[worker.category] ?? Star;
   const style = getCategoryStyle(worker.category);
+<<<<<<< HEAD
   const media = getTradeMedia(worker.category);
 
   return (
@@ -178,11 +217,45 @@ export function WorkerProfilePage() {
                 {worker.location && (
                   <span className="flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-100 border border-black px-2.5 py-1 rounded-lg">
                     <MapPin size={14} className="text-black" /> {worker.location}
+=======
+
+  return (
+    <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
+      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
+      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
+
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <Link to="/workers" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emerald transition-colors">
+          <ArrowLeft size={16} /> Back to Workers
+        </Link>
+
+        {/* Hero card */}
+        <GlassCard className="relative overflow-hidden p-8 mb-6 animate-slide-up">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+            <div className={`h-24 w-24 rounded-3xl border ${style.bg} ${style.border} ${style.glow} flex items-center justify-center shrink-0`}>
+              <Icon className={style.text} size={48} />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-white">{worker.users?.name ?? 'Unknown Worker'}</h1>
+                {worker.is_verified && (
+                  <Badge variant="emerald"><ShieldCheck size={12} /> Verified</Badge>
+                )}
+              </div>
+              <p className="text-lg text-gray-400 mb-3">{worker.category}</p>
+              <div className="flex flex-wrap items-center gap-4">
+                <StarRating rating={worker.rating} size={18} />
+                <span className="text-sm text-gray-500">({worker.total_ratings} reviews)</span>
+                {worker.location && (
+                  <span className="flex items-center gap-1 text-sm text-gray-400">
+                    <MapPin size={14} className="text-gray-500" /> {worker.location}
+>>>>>>> origin/main
                   </span>
                 )}
               </div>
             </div>
             <div className="flex flex-col sm:items-end justify-between">
+<<<<<<< HEAD
               <div className="text-left sm:text-right">
                 <span className="text-3xl font-black text-black">₹{worker.hourly_rate}</span>
                 <span className="text-gray-600 text-sm font-bold"> /hr</span>
@@ -232,10 +305,23 @@ export function WorkerProfilePage() {
             ))}
           </div>
         </div>
+=======
+              <div className="text-right">
+                <span className="text-3xl font-bold text-white">₹{worker.hourly_rate}</span>
+                <span className="text-gray-400 text-sm">/hr</span>
+              </div>
+              <NeonButton onClick={handleBook} size="lg" variant="emerald" className="mt-4">
+                Book Now <ArrowRight size={18} />
+              </NeonButton>
+            </div>
+          </div>
+        </GlassCard>
+>>>>>>> origin/main
 
         {/* Details Grid */}
         <div className="grid gap-6 md:grid-cols-3 mb-6">
           {/* Bio */}
+<<<<<<< HEAD
           <div className="rounded-3xl border-2 border-black bg-white p-6 md:col-span-2 shadow-[5px_5px_0px_0px_#000]">
             <h2 className="text-lg font-black text-black mb-3 flex items-center gap-2">
               <Briefcase size={18} className="text-emerald-800" /> About Professional
@@ -473,6 +559,84 @@ export function WorkerProfilePage() {
           </div>
 
         </div>
+=======
+          <GlassCard className="p-6 md:col-span-2">
+            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <Briefcase size={18} className="text-neon-emerald" /> About
+            </h2>
+            <p className="text-gray-300 leading-relaxed text-sm">
+              {worker.bio || 'No bio provided.'}
+            </p>
+
+            <h3 className="text-sm font-semibold text-gray-400 mt-6 mb-3">Skills & Specializations</h3>
+            <div className="flex flex-wrap gap-2">
+              {worker.skills?.map((skill) => (
+                <span key={skill} className="rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-gray-200">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </GlassCard>
+
+          {/* Quick Info */}
+          <div className="space-y-6">
+            <GlassCard className="p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">Highlights</h2>
+              <div className="space-y-4 text-sm">
+                <div className="flex items-center gap-3 text-gray-300">
+                  <ShieldCheck size={18} className="text-neon-emerald shrink-0" />
+                  <span>100% Background Verified</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                  <Wallet size={18} className="text-neon-cyan shrink-0" />
+                  <span>Direct UPI Payments</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                  <Clock size={18} className="text-neon-cyan shrink-0" />
+                  <span>Prompt Response Rate</span>
+                </div>
+              </div>
+            </GlassCard>
+
+            <GlassCard className="p-6">
+              <h2 className="text-lg font-semibold text-white mb-2">Need Custom Work?</h2>
+              <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                You can specify exact requirements and provide special notes during the booking step.
+              </p>
+              <NeonButton onClick={handleBook} fullWidth size="md" variant="cyan">
+                Request Service
+              </NeonButton>
+            </GlassCard>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <GlassCard className="p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <MessageSquare size={18} className="text-neon-emerald" /> Customer Reviews ({worker.total_ratings})
+          </h2>
+          <div className="space-y-4">
+            <div className="border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-white text-sm">Ankit Verma</span>
+                <StarRating rating={5} size={14} />
+              </div>
+              <p className="text-xs text-gray-400">
+                Extremely skilled, arrived right on time, and resolved the issue quickly. Highly recommended!
+              </p>
+            </div>
+            <div className="border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-white text-sm">Neha Kapoor</span>
+                <StarRating rating={4.8} size={14} />
+              </div>
+              <p className="text-xs text-gray-400">
+                Very courteous and professional. Clean work and fair hourly rate.
+              </p>
+            </div>
+          </div>
+        </GlassCard>
+>>>>>>> origin/main
       </div>
     </div>
   );

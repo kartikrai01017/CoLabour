@@ -10,11 +10,17 @@
   }
 
   body {
+<<<<<<< HEAD
     @apply bg-[#fafafa] text-slate-900 font-sans antialiased;
+=======
+    @apply bg-base text-gray-100 font-sans antialiased;
+    background: radial-gradient(ellipse at top, #111827 0%, #0B0F19 50%, #0B0F19 100%);
+>>>>>>> origin/main
     min-height: 100vh;
   }
 
   ::-webkit-scrollbar {
+<<<<<<< HEAD
     width: 6px;
     height: 6px;
   }
@@ -27,6 +33,20 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+=======
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0B0F19;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #10B981, #06B6D4);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #34D399, #22D3EE);
+>>>>>>> origin/main
   }
 }
 
@@ -136,6 +156,7 @@
     z-index: 999999;
   }
 }
+<<<<<<< HEAD
 
 /* Custom Leaflet Map styling for Live Work Radar */
 .colabour-leaflet-map .leaflet-control-zoom {
@@ -283,3 +304,5 @@
 }
 
 
+=======
+>>>>>>> origin/main
