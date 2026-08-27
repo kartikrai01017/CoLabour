@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { Star } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
@@ -30,6 +31,7 @@ export function AnimatedCounter({ value, suffix = '', duration = 1500 }: { value
 import { useEffect, useState } from 'react';
 
 function CounterInner({ value, suffix, duration }: { value: number; suffix: string; duration: number }) {
+  const { locale } = useLanguage();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -46,5 +48,5 @@ function CounterInner({ value, suffix, duration }: { value: number; suffix: stri
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
 
-  return <span>{count.toLocaleString()}{suffix}</span>;
+  return <span>{count.toLocaleString(locale)}{suffix}</span>;
 }

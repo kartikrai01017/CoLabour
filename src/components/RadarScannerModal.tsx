@@ -7,6 +7,7 @@ import {
 import { NeonButton } from '@/components/ui/NeonButton';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { calculateReachTimeMinutes } from '@/lib/geo';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface RadarScannerModalProps {
   isOpen: boolean;
@@ -19,13 +20,6 @@ interface RadarScannerModalProps {
   onCancel: () => void;
 }
 
-const SCANNER_STEPS = [
-  { text: 'Detecting your live GPS location...', progress: 25 },
-  { text: 'Scanning nearby verified workers (within 5 km)...', progress: 55 },
-  { text: 'Matching closest professional...', progress: 85 },
-  { text: 'Worker found! Live signal locked & waiting for acceptance', progress: 100 },
-];
-
 export function RadarScannerModal({
   isOpen,
   workerName,
@@ -36,8 +30,16 @@ export function RadarScannerModal({
   onConfirm,
   onCancel,
 }: RadarScannerModalProps) {
+  const { t, categoryName } = useLanguage();
   const [stepIndex, setStepIndex] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
+
+  const scannerSteps = [
+    { text: t('radar.detecting'), progress: 25 },
+    { text: t('radar.scanning'), progress: 55 },
+    { text: t('radar.matching'), progress: 85 },
+    { text: t('radar.found'), progress: 100 },
+  ];
 
   const reachTime = calculateReachTimeMinutes(distanceKm);
   const CategoryIcon = CATEGORY_ICONS[workerCategory] ?? Navigation;
@@ -85,9 +87,9 @@ export function RadarScannerModal({
         {/* Header */}
         <div className="text-center mb-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-neon-emerald/30 bg-neon-emerald/10 px-3 py-1 text-xs font-bold text-neon-emerald uppercase tracking-wider mb-2">
-            <Radio size={14} className="animate-pulse" /> Live GPS Radar Matching
+             <Radio size={14} className="animate-pulse" /> {t('radar.title')}
           </div>
-          <h3 className="text-xl font-bold text-white">CoLabour Proximity Dispatch</h3>
+          <h3 className="text-xl font-bold text-white">{t('radar.subtitle')}</h3>
         </div>
 
         {/* Radar Screen Area */}
@@ -118,7 +120,7 @@ export function RadarScannerModal({
               <Navigation size={16} className="text-base-950" />
               <div className="absolute inset-0 animate-ping rounded-full bg-neon-cyan/40" />
             </div>
-            <span className="mt-1 text-[10px] font-bold text-neon-cyan uppercase">You</span>
+             <span className="mt-1 text-[10px] font-bold text-neon-cyan uppercase">{t('radar.you')}</span>
           </div>
 
           {/* Locked Worker Target */}
@@ -137,7 +139,7 @@ export function RadarScannerModal({
                   </div>
                 </div>
                 <span className="mt-1 rounded bg-base-900/90 px-1.5 py-0.5 text-[9px] font-bold text-neon-emerald border border-neon-emerald/40">
-                  {distanceKm.toFixed(1)} km
+                   {t('radar.kmAway', { distance: distanceKm.toFixed(1) })}
                 </span>
               </motion.div>
             )}
@@ -147,24 +149,24 @@ export function RadarScannerModal({
         {/* Live Distance & Reach Time Badge */}
         <div className="mb-4 flex items-center justify-center gap-3">
           <div className="flex items-center gap-1.5 rounded-xl border border-neon-emerald/30 bg-neon-emerald/10 px-3 py-1.5 text-xs font-semibold text-neon-emerald">
-            <Navigation size={13} /> {distanceKm.toFixed(1)} km away
+             <Navigation size={13} /> {t('radar.kmAway', { distance: distanceKm.toFixed(1) })}
           </div>
           <div className="flex items-center gap-1.5 rounded-xl border border-neon-cyan/30 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan">
-            <Clock size={13} /> ~{reachTime} mins reach time
+             <Clock size={13} /> {t('radar.minsReach', { minutes: reachTime })}
           </div>
         </div>
 
         {/* Dynamic Status Progression Sequence */}
         <div className="mb-5 rounded-2xl border border-white/10 bg-base-950/60 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono text-gray-400">STATUS SEQUENCE</span>
-            <span className="text-xs font-mono font-bold text-neon-emerald">{SCANNER_STEPS[stepIndex].progress}%</span>
+             <span className="text-xs font-mono text-gray-400">{t('radar.statusSequence')}</span>
+             <span className="text-xs font-mono font-bold text-neon-emerald">{scannerSteps[stepIndex].progress}%</span>
           </div>
           {/* Progress bar */}
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10 mb-3">
             <motion.div
               initial={{ width: '0%' }}
-              animate={{ width: `${SCANNER_STEPS[stepIndex].progress}%` }}
+               animate={{ width: `${scannerSteps[stepIndex].progress}%` }}
               className="h-full bg-gradient-to-r from-neon-emerald to-neon-cyan"
             />
           </div>
@@ -174,7 +176,7 @@ export function RadarScannerModal({
             ) : (
               <Radio size={16} className="text-neon-cyan animate-pulse flex-shrink-0" />
             )}
-            <span>{SCANNER_STEPS[stepIndex].text}</span>
+             <span>{scannerSteps[stepIndex].text}</span>
           </p>
         </div>
 
@@ -186,13 +188,13 @@ export function RadarScannerModal({
             </div>
             <div>
               <p className="font-semibold text-sm text-white">{workerName}</p>
-              <p className="text-xs text-gray-400">{workerCategory} • {workerLocation ?? 'Nearby'}</p>
+               <p className="text-xs text-gray-400">{categoryName(workerCategory)} • {workerLocation ?? t('radar.nearby')}</p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-sm font-bold text-neon-emerald">₹{workerRate}/hr</p>
             <p className="text-[10px] text-gray-400 flex items-center gap-1 justify-end">
-              <ShieldCheck size={10} className="text-neon-emerald" /> 0% Platform Fee
+               <ShieldCheck size={10} className="text-neon-emerald" /> {t('radar.platformFee')}
             </p>
           </div>
         </div>
@@ -206,9 +208,9 @@ export function RadarScannerModal({
           disabled={!isLocked}
         >
           {isLocked ? (
-            <>Lock In & Proceed to Payment Gateway <ArrowRight size={18} /></>
+             <>{t('radar.lockProceed')} <ArrowRight size={18} /></>
           ) : (
-            <>Acquiring Satellite Lock...</>
+             <>{t('radar.acquiring')}</>
           )}
         </NeonButton>
       </motion.div>

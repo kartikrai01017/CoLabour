@@ -13,6 +13,7 @@ import {
 } from '@/lib/dataService';
 import { type Booking, type Payment } from '@/lib/supabase';
 import { NeonButton } from '@/components/ui/NeonButton';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PendingBookingItem extends Booking {
   customer?: { name: string; phone: string } | null;
@@ -24,6 +25,7 @@ interface PaymentItem extends Payment {
 
 export function GlobalWorkerAlert() {
   const { user } = useAuth();
+  const { t, categoryName, locale } = useLanguage();
   const [incomingJob, setIncomingJob] = useState<PendingBookingItem | null>(null);
   const [paymentAlert, setPaymentAlert] = useState<PaymentItem | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -79,7 +81,7 @@ export function GlobalWorkerAlert() {
       setIncomingJob(null);
       await checkAlerts();
     } catch {
-      alert('Failed to accept booking');
+      alert(t('alerts.acceptFailed'));
     } finally {
       setProcessing(false);
     }
@@ -94,7 +96,7 @@ export function GlobalWorkerAlert() {
       setIncomingJob(null);
       await checkAlerts();
     } catch {
-      alert('Failed to decline booking');
+      alert(t('alerts.declineFailed'));
     } finally {
       setProcessing(false);
     }
@@ -110,7 +112,7 @@ export function GlobalWorkerAlert() {
       setPaymentAlert(null);
       await checkAlerts();
     } catch {
-      alert('Failed to confirm payment');
+      alert(t('alerts.confirmFailed'));
     } finally {
       setProcessing(false);
     }
@@ -125,7 +127,7 @@ export function GlobalWorkerAlert() {
       setPaymentAlert(null);
       await checkAlerts();
     } catch {
-      alert('Failed to reject payment');
+      alert(t('alerts.rejectFailed'));
     } finally {
       setProcessing(false);
     }
@@ -160,7 +162,7 @@ export function GlobalWorkerAlert() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-neon-cyan" />
                 </span>
                 <span className="text-xs font-mono font-bold tracking-wider text-neon-cyan uppercase">
-                  HIGH-PRIORITY JOB DISPATCH
+                  {t('alerts.highPriority')}
                 </span>
               </div>
               <button
@@ -178,35 +180,35 @@ export function GlobalWorkerAlert() {
               <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-neon-cyan/15 border border-neon-cyan/30 text-neon-cyan shadow-[0_0_30px_rgba(6,182,212,0.25)]">
                 <Bell size={32} className="animate-bounce" />
               </div>
-              <h2 className="text-2xl font-bold text-white">New Service Request!</h2>
-              <p className="text-sm text-gray-400 mt-1">A customer has requested your expertise on CoLabour.</p>
+              <h2 className="text-2xl font-bold text-white">{t('alerts.newRequest')}</h2>
+              <p className="text-sm text-gray-400 mt-1">{t('alerts.requestDescription')}</p>
             </div>
 
             {/* Job Details Box */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2.5 my-5 text-sm">
               <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                <span className="text-gray-400">Customer:</span>
-                <span className="font-semibold text-white">{incomingJob.customer?.name ?? 'Verified Customer'}</span>
+                <span className="text-gray-400">{t('alerts.customer')}</span>
+                <span className="font-semibold text-white">{incomingJob.customer?.name ?? t('alerts.verifiedCustomer')}</span>
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                <span className="text-gray-400">Category / Skill:</span>
-                <span className="font-semibold text-neon-cyan">{incomingJob.category}</span>
+                <span className="text-gray-400">{t('alerts.category')}</span>
+                <span className="font-semibold text-neon-cyan">{categoryName(incomingJob.category)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 flex items-center gap-1.5"><Wallet size={14} /> Total Value:</span>
+                <span className="text-gray-400 flex items-center gap-1.5"><Wallet size={14} /> {t('alerts.totalValue')}</span>
                 <span className="text-lg font-bold text-neon-emerald">₹{Number(incomingJob.total_amount).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 flex items-center gap-1.5"><Calendar size={14} /> Scheduled At:</span>
-                <span className="text-gray-200">{new Date(incomingJob.scheduled_at).toLocaleString()}</span>
+                <span className="text-gray-400 flex items-center gap-1.5"><Calendar size={14} /> {t('alerts.scheduledAt')}</span>
+                <span className="text-gray-200">{new Date(incomingJob.scheduled_at).toLocaleString(locale)}</span>
               </div>
               <div className="flex justify-between items-start pt-1">
-                <span className="text-gray-400 flex items-center gap-1.5"><MapPin size={14} /> Location:</span>
+                <span className="text-gray-400 flex items-center gap-1.5"><MapPin size={14} /> {t('alerts.location')}</span>
                 <span className="text-gray-200 text-right max-w-[220px] font-medium">{incomingJob.address}</span>
               </div>
               {incomingJob.notes && (
                 <div className="mt-2 text-xs bg-black/40 p-2.5 rounded-xl border border-white/5 text-gray-300">
-                  <span className="text-gray-500 font-semibold block mb-0.5">Customer Note:</span>
+                  <span className="text-gray-500 font-semibold block mb-0.5">{t('alerts.customerNote')}</span>
                   {incomingJob.notes}
                 </div>
               )}
@@ -220,7 +222,7 @@ export function GlobalWorkerAlert() {
                 disabled={processing}
                 className="py-3 px-4 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold text-sm transition-all flex items-center justify-center gap-2"
               >
-                <XCircle size={18} /> Decline
+                <XCircle size={18} /> {t('alerts.decline')}
               </button>
               <NeonButton
                 size="lg"
@@ -229,7 +231,7 @@ export function GlobalWorkerAlert() {
                 disabled={processing}
                 className="flex items-center justify-center gap-2"
               >
-                {processing ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle2 size={18} /> Accept Job</>}
+                {processing ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle2 size={18} /> {t('alerts.acceptJob')}</>}
               </NeonButton>
             </div>
           </motion.div>
@@ -261,7 +263,7 @@ export function GlobalWorkerAlert() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-neon-emerald" />
                 </span>
                 <span className="text-xs font-mono font-bold tracking-wider text-neon-emerald uppercase">
-                  PAYMENT VERIFICATION REQUIRED
+                  {t('alerts.verificationRequired')}
                 </span>
               </div>
               <button
@@ -279,14 +281,14 @@ export function GlobalWorkerAlert() {
               <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-neon-emerald/15 border border-neon-emerald/30 text-neon-emerald shadow-[0_0_30px_rgba(16,185,129,0.3)]">
                 <Wallet size={32} className="animate-pulse" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Payment Received Alert</h2>
-              <p className="text-sm text-gray-400 mt-1">Customer submitted UPI confirmation for this job.</p>
+              <h2 className="text-2xl font-bold text-white">{t('alerts.paymentAlert')}</h2>
+              <p className="text-sm text-gray-400 mt-1">{t('alerts.paymentDescription')}</p>
             </div>
 
             {/* Payment & UTR Summary Box */}
             <div className="rounded-2xl border border-neon-emerald/30 bg-neon-emerald/5 p-5 my-5 space-y-3">
               <div className="text-center pb-3 border-b border-white/10">
-                <p className="text-xs text-gray-400">Total Amount Claimed</p>
+                <p className="text-xs text-gray-400">{t('alerts.totalClaimed')}</p>
                 <p className="text-4xl font-extrabold text-neon-emerald mt-1">
                   ₹{Number(paymentAlert.amount).toFixed(2)}
                 </p>
@@ -294,20 +296,20 @@ export function GlobalWorkerAlert() {
 
               <div className="space-y-2 text-sm pt-1">
                 <div className="flex justify-between items-center bg-base-900/80 p-2.5 rounded-xl border border-white/10">
-                  <span className="text-gray-400 text-xs uppercase font-mono">12-Digit Bank UTR:</span>
+                   <span className="text-gray-400 text-xs uppercase font-mono">{t('alerts.bankUtr')}</span>
                   <span className="font-mono font-bold text-neon-cyan tracking-wider text-base">
-                    {paymentAlert.utr_number || 'N/A'}
+                     {paymentAlert.utr_number || t('alerts.notAvailable')}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs text-gray-400 px-1">
-                  <span>Timestamp:</span>
-                  <span>{new Date(paymentAlert.created_at).toLocaleString()}</span>
+                   <span>{t('alerts.timestamp')}</span>
+                   <span>{new Date(paymentAlert.created_at).toLocaleString(locale)}</span>
                 </div>
               </div>
             </div>
 
             <p className="text-xs text-gray-400 text-center mb-6">
-              Please check your UPI app / SMS alert for this transaction. Did you receive this payment?
+              {t('alerts.checkPayment')}
             </p>
 
             {/* Confirm / Reject Buttons */}
@@ -318,7 +320,7 @@ export function GlobalWorkerAlert() {
                 disabled={processing}
                 className="py-3 px-4 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold text-sm transition-all flex items-center justify-center gap-2"
               >
-                <XCircle size={18} /> No, Not Received
+                 <XCircle size={18} /> {t('alerts.notReceived')}
               </button>
               <NeonButton
                 size="lg"
@@ -327,7 +329,7 @@ export function GlobalWorkerAlert() {
                 disabled={processing}
                 className="flex items-center justify-center gap-2"
               >
-                {processing ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle2 size={18} /> Yes, Received</>}
+                 {processing ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle2 size={18} /> {t('alerts.yesReceived')}</>}
               </NeonButton>
             </div>
           </motion.div>

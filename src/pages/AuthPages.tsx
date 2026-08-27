@@ -20,10 +20,12 @@ import {
 } from 'lucide-react';
 import { CATEGORIES } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function SignupPage() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
+  const { t, categoryName } = useLanguage();
   const [role, setRole] = useState<'customer' | 'worker'>('customer');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -44,11 +46,11 @@ export function SignupPage() {
     setError('');
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters in length');
+      setError(t('auth.passwordMinError'));
       return;
     }
     if (role === 'worker' && !upiId.trim()) {
-      setError('UPI ID is required for direct settlement routing');
+      setError(t('auth.upiRequiredError'));
       return;
     }
 
@@ -75,9 +77,9 @@ export function SignupPage() {
         navigate('/customer/dashboard');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Registration failed';
+      const msg = err instanceof Error ? err.message : t('auth.registrationFailed');
       if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered')) {
-        setError('An account with this email address already exists. Please sign in.');
+        setError(t('auth.accountExists'));
       } else {
         setError(msg);
       }
@@ -108,10 +110,10 @@ export function SignupPage() {
           </Link>
 
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Create your account
+            {t('auth.signupTitle')}
           </h1>
           <p className="mt-2 text-sm text-gray-400">
-            Join the verified gig workforce network with real-time settlement
+            {t('auth.signupSubtitle')}
           </p>
         </div>
 
@@ -120,7 +122,7 @@ export function SignupPage() {
           {/* Role Selection */}
           <div className="mb-8">
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-              Select Account Type
+              {t('auth.accountType')}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -149,8 +151,8 @@ export function SignupPage() {
                     </div>
                   )}
                 </div>
-                <span className="font-semibold text-sm text-white">Customer</span>
-                <span className="text-xs text-gray-400 mt-0.5">Hire & book verified services</span>
+                <span className="font-semibold text-sm text-white">{t('auth.customer')}</span>
+                <span className="text-xs text-gray-400 mt-0.5">{t('auth.customerDescription')}</span>
               </button>
 
               <button
@@ -179,8 +181,8 @@ export function SignupPage() {
                     </div>
                   )}
                 </div>
-                <span className="font-semibold text-sm text-white">Worker / Pro</span>
-                <span className="text-xs text-gray-400 mt-0.5">Offer skills & get instant payouts</span>
+                <span className="font-semibold text-sm text-white">{t('auth.workerPro')}</span>
+                <span className="text-xs text-gray-400 mt-0.5">{t('auth.workerDescription')}</span>
               </button>
             </div>
           </div>
@@ -189,7 +191,7 @@ export function SignupPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                  Full Name <span className="text-amber-400">*</span>
+                  {t('auth.fullName')} <span className="text-amber-400">*</span>
                 </label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -198,7 +200,7 @@ export function SignupPage() {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Aditi Rao"
+                    placeholder={t('auth.namePlaceholder')}
                     className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                   />
                 </div>
@@ -206,7 +208,7 @@ export function SignupPage() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                  Phone Number <span className="text-amber-400">*</span>
+                  {t('auth.phoneNumber')} <span className="text-amber-400">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -215,7 +217,7 @@ export function SignupPage() {
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 12340"
+                    placeholder={t('auth.phonePlaceholder')}
                     className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                   />
                 </div>
@@ -225,7 +227,7 @@ export function SignupPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                  Email Address <span className="text-amber-400">*</span>
+                  {t('auth.emailAddress')} <span className="text-amber-400">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -234,7 +236,7 @@ export function SignupPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="aditi@example.com"
+                    placeholder={t('auth.emailSignupPlaceholder')}
                     className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                   />
                 </div>
@@ -242,7 +244,7 @@ export function SignupPage() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                  Password <span className="text-amber-400">*</span>
+                  {t('auth.password')} <span className="text-amber-400">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -252,7 +254,7 @@ export function SignupPage() {
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 6 characters"
+                    placeholder={t('auth.passwordSignupPlaceholder')}
                     className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-10 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                   />
                   <button
@@ -271,13 +273,13 @@ export function SignupPage() {
             {role === 'worker' && (
               <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 text-xs font-semibold text-amber-300 uppercase tracking-wider">
-                  <ShieldCheck size={16} /> Professional Verification Details
+                  <ShieldCheck size={16} /> {t('auth.verificationDetails')}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                      Service Category <span className="text-amber-400">*</span>
+                      {t('auth.serviceCategory')} <span className="text-amber-400">*</span>
                     </label>
                     <div className="relative">
                       <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -288,7 +290,7 @@ export function SignupPage() {
                       >
                         {CATEGORIES.map((cat) => (
                           <option key={cat} value={cat} className="bg-[#15141C] text-white">
-                            {cat}
+                            {categoryName(cat)}
                           </option>
                         ))}
                       </select>
@@ -297,7 +299,7 @@ export function SignupPage() {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                      Direct UPI ID <span className="text-amber-400">*</span>
+                      {t('auth.directUpiId')} <span className="text-amber-400">*</span>
                     </label>
                     <div className="relative">
                       <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -306,7 +308,7 @@ export function SignupPage() {
                         required
                         value={upiId}
                         onChange={(e) => setUpiId(e.target.value)}
-                        placeholder="rajesh.kumar@okhdfcbank"
+                        placeholder={t('auth.upiPlaceholder')}
                         className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                       />
                     </div>
@@ -316,7 +318,7 @@ export function SignupPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                      Hourly Rate (₹) <span className="text-amber-400">*</span>
+                      {t('auth.hourlyRate')} <span className="text-amber-400">*</span>
                     </label>
                     <input
                       type="number"
@@ -324,14 +326,14 @@ export function SignupPage() {
                       min={100}
                       value={hourlyRate}
                       onChange={(e) => setHourlyRate(e.target.value)}
-                      placeholder="450"
+                      placeholder={t('auth.ratePlaceholder')}
                       className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl px-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                      Operating City / Location <span className="text-amber-400">*</span>
+                      {t('auth.operatingLocation')} <span className="text-amber-400">*</span>
                     </label>
                     <div className="relative">
                       <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -340,7 +342,7 @@ export function SignupPage() {
                         required
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Indiranagar, Bangalore"
+                        placeholder={t('auth.locationPlaceholder')}
                         className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                       />
                     </div>
@@ -349,26 +351,26 @@ export function SignupPage() {
 
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                    Skills Summary (comma separated)
+                    {t('auth.skillsSummary')}
                   </label>
                   <input
                     type="text"
                     value={skills}
                     onChange={(e) => setSkills(e.target.value)}
-                    placeholder="Wiring, Inverter Setup, Appliance Repair, Circuit Breakers"
+                    placeholder={t('auth.skillsPlaceholder')}
                     className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl px-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                    Professional Bio
+                    {t('auth.professionalBio')}
                   </label>
                   <textarea
                     rows={2}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Master technician with 8+ years experience in domestic and commercial electrical repairs."
+                    placeholder={t('auth.bioPlaceholder')}
                     className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl px-4 py-2.5 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20 resize-none"
                   />
                 </div>
@@ -391,11 +393,11 @@ export function SignupPage() {
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin text-black" />
-                  <span>Creating Account...</span>
+                  <span>{t('auth.creatingAccount')}</span>
                 </>
               ) : (
                 <>
-                  <span>Create Account</span>
+                  <span>{t('auth.createAccount')}</span>
                   <ArrowRight size={16} />
                 </>
               )}
@@ -404,9 +406,9 @@ export function SignupPage() {
 
           <div className="mt-6 pt-6 border-t border-white/[0.07] text-center">
             <p className="text-xs text-gray-400">
-              Already have an account?{' '}
+              {t('auth.alreadyAccount')}{' '}
               <Link to="/login" className="font-medium text-amber-400 hover:text-amber-300 transition-colors">
-                Sign in to your account
+                {t('auth.signInAccount')}
               </Link>
             </p>
           </div>
@@ -419,6 +421,7 @@ export function SignupPage() {
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -431,11 +434,11 @@ export function LoginPage() {
     setError('');
 
     if (!email.trim()) {
-      setError('Please enter your email address');
+      setError(t('auth.enterEmail'));
       return;
     }
     if (!password) {
-      setError('Please enter your password');
+      setError(t('auth.enterPassword'));
       return;
     }
 
@@ -451,7 +454,7 @@ export function LoginPage() {
         navigate('/customer/dashboard');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Invalid credentials';
+      const msg = err instanceof Error ? err.message : t('auth.invalidCredentials');
       setError(msg);
     } finally {
       setLoading(false);
@@ -480,10 +483,10 @@ export function LoginPage() {
           </Link>
 
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Welcome back
+            {t('auth.welcomeBack')}
           </h1>
           <p className="mt-2 text-sm text-gray-400">
-            Sign in to access your dashboard and active jobs
+            {t('auth.loginSubtitle')}
           </p>
         </div>
 
@@ -492,7 +495,7 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                Email Address
+                  {t('auth.emailAddress')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -502,7 +505,7 @@ export function LoginPage() {
                   id="login-email-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder={t('auth.emailLoginPlaceholder')}
                   className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-4 py-3 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                 />
               </div>
@@ -511,7 +514,7 @@ export function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-medium text-gray-300">
-                  Password
+                  {t('auth.password')}
                 </label>
               </div>
               <div className="relative">
@@ -522,7 +525,7 @@ export function LoginPage() {
                   id="login-password-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Your password"
+                  placeholder={t('auth.passwordLoginPlaceholder')}
                   className="w-full bg-[#0D0C13]/90 border border-white/[0.09] text-gray-100 placeholder:text-gray-500 rounded-xl pl-10 pr-10 py-3 text-sm transition-all focus:border-amber-500/60 focus:bg-[#121019] focus:ring-4 focus:ring-amber-500/10 focus:outline-none hover:border-white/20"
                 />
                 <button
@@ -544,11 +547,11 @@ export function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30 w-3.5 h-3.5"
                 />
-                <span>Remember this device</span>
+                <span>{t('auth.rememberDevice')}</span>
               </label>
 
               <span className="text-gray-500 hover:text-gray-400 cursor-default">
-                Encrypted Session
+                {t('auth.encryptedSession')}
               </span>
             </div>
 
@@ -568,11 +571,11 @@ export function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin text-black" />
-                  <span>Signing In...</span>
+                  <span>{t('auth.signingIn')}</span>
                 </>
               ) : (
                 <>
-                  <span>Sign In</span>
+                  <span>{t('auth.signIn')}</span>
                   <ArrowRight size={16} />
                 </>
               )}
@@ -581,9 +584,9 @@ export function LoginPage() {
 
           <div className="mt-8 pt-6 border-t border-white/[0.07] text-center">
             <p className="text-xs text-gray-400">
-              Don't have an account yet?{' '}
+              {t('auth.noAccount')}{' '}
               <Link to="/signup" className="font-medium text-amber-400 hover:text-amber-300 transition-colors">
-                Create an account
+                {t('auth.createAccountLink')}
               </Link>
             </p>
           </div>
@@ -593,7 +596,7 @@ export function LoginPage() {
         <div className="mt-8 text-center text-xs text-gray-500">
           <p className="flex items-center justify-center gap-1.5">
             <ShieldCheck size={14} className="text-amber-400/70" />
-            <span>Protected by end-to-end encrypted session tokens & Supabase RLS</span>
+            <span>{t('auth.protectedSession')}</span>
           </p>
         </div>
       </div>

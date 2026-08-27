@@ -12,6 +12,7 @@ import { GlowOrb } from '@/components/ui/Shared';
 import { type Booking, type Payment, type WorkerWithUser } from '@/lib/supabase';
 import { fetchBookingById, fetchWorkerProfile, fetchPaymentByBookingId, submitPaymentRecord } from '@/lib/dataService';
 import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
+import { useLanguage } from '@/context/LanguageContext';
 
 const UPI_APPS = [
   { name: 'GPay', scheme: 'tez', color: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
@@ -23,6 +24,7 @@ const UPI_APPS = [
 export function PaymentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, categoryName } = useLanguage();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
@@ -115,7 +117,7 @@ export function PaymentPage() {
 
   const handleConfirmPayment = async () => {
     if (!utrNumber || utrNumber.length < 8) {
-      setError('Please enter a valid 12-digit UTR / Reference number');
+      setError(t('payment.validUtr'));
       return;
     }
     if (!payment || !booking || !worker || submitting) return;
@@ -135,7 +137,7 @@ export function PaymentPage() {
 
       setPayment(updatedPayment);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to confirm payment';
+      const msg = err instanceof Error ? err.message : t('payment.confirmFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -167,8 +169,8 @@ export function PaymentPage() {
   if (!booking || !payment || !worker) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
-        <p className="text-gray-400">Booking or payment record not found.</p>
-        <Link to="/customer/dashboard"><NeonButton variant="ghost">Go to Dashboard</NeonButton></Link>
+        <p className="text-gray-400">{t('payment.notFound')}</p>
+        <Link to="/customer/dashboard"><NeonButton variant="ghost">{t('payment.goDashboard')}</NeonButton></Link>
       </div>
     );
   }
@@ -186,32 +188,32 @@ export function PaymentPage() {
 
         <div className="flex items-center justify-between mb-6">
           <Link to="/customer/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-emerald-400 transition-colors">
-            <ArrowLeft size={16} /> Back to Dashboard
+            <ArrowLeft size={16} /> {t('payment.backDashboard')}
           </Link>
           <button
             type="button"
             onClick={() => setTestReceiptMode(false)}
             className="text-xs px-3 py-1.5 rounded-full border border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-all font-mono"
           >
-            ✕ Close Slip View
+            ✕ {t('payment.closeSlip')}
           </button>
         </div>
 
         <div className="text-center mb-6">
           <Badge variant="emerald" className="px-4 py-1.5 text-xs font-mono">
-            SETTLEMENT COMPLETED
+            {t('payment.settlementCompleted')}
           </Badge>
         </div>
 
         {/* The 3D Sound & POS Slip Machine Component */}
         <CoLabourPrinterEngine
           bookingId={booking.id}
-          workerName={worker.users?.name ?? 'Professional Worker'}
-          workerSkill={booking.category}
-          workerUpiId={worker.upi_id}
-          customerName="Verified Customer"
-          date={payment.paid_at || new Date().toISOString()}
-          utrNumber={payment.utr_number || 'UPI-REF-SUCCESS'}
+           workerName={worker.users?.name ?? t('payment.professionalWorker')}
+           workerSkill={categoryName(booking.category)}
+           workerUpiId={worker.upi_id}
+           customerName={t('payment.verifiedCustomer')}
+           date={payment.paid_at || new Date().toISOString()}
+           utrNumber={payment.utr_number || t('payment.successUtr')}
           totalAmount={Number(payment.amount)}
           onDone={() => navigate('/customer/dashboard')}
         />
@@ -228,34 +230,34 @@ export function PaymentPage() {
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <Link to="/customer/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-emerald-400 transition-colors">
-            <ArrowLeft size={16} /> Back to Dashboard
+            <ArrowLeft size={16} /> {t('payment.backDashboard')}
           </Link>
           <button
             type="button"
             onClick={() => setTestReceiptMode(!testReceiptMode)}
             className="text-xs px-3 py-1.5 rounded-full border border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-all font-mono"
           >
-            ⚡ Quick Test Slip / Toing
+            ⚡ {t('payment.quickTest')}
           </button>
         </div>
 
         <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-3xl font-bold text-white">Payment Gateway</h1>
-          <p className="mt-2 text-gray-400">Direct Worker Settlement powered by UPI</p>
+           <h1 className="text-3xl font-bold text-white">{t('payment.title')}</h1>
+           <p className="mt-2 text-gray-400">{t('payment.subtitle')}</p>
         </div>
 
         {/* Amount & Status Banner */}
         <GlassCard className="mb-6 p-6 text-center">
-          <p className="text-sm text-gray-400 mb-1">Total Payable Amount</p>
+           <p className="text-sm text-gray-400 mb-1">{t('payment.totalPayable')}</p>
           <p className="text-5xl font-bold text-emerald-400 font-mono">₹{payment.amount.toFixed(2)}</p>
           <div className="mt-3 flex items-center justify-center gap-2">
             <Badge variant={isSubmitted ? 'amber' : isWorkerAccepted ? 'cyan' : 'amber'}>
               {isSubmitted ? (
-                <><Clock size={12} /> Worker Verifying UTR</>
+                 <><Clock size={12} /> {t('payment.workerVerifying')}</>
               ) : isWorkerAccepted ? (
-                <><CheckCircle2 size={12} /> Worker Accepted & Ready</>
+                 <><CheckCircle2 size={12} /> {t('payment.workerAccepted')}</>
               ) : (
-                <><Hourglass size={12} className="animate-spin" /> Awaiting Worker Acceptance</>
+                 <><Hourglass size={12} className="animate-spin" /> {t('payment.awaitingAcceptance')}</>
               )}
             </Badge>
           </div>
@@ -267,15 +269,15 @@ export function PaymentPage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
               <Lock size={32} />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">QR Code Locked</h2>
+             <h2 className="text-xl font-bold text-white mb-2">{t('payment.qrLocked')}</h2>
             <p className="text-sm text-amber-300/90 font-medium max-w-md mx-auto mb-4">
-              Waiting for <span className="text-white font-bold">{worker.users?.name ?? 'the professional'}</span> to accept this job request.
+              {t('payment.waitingFor', { name: worker.users?.name ?? t('payment.professionalWorker') })}
             </p>
             <p className="text-xs text-gray-400 max-w-sm mx-auto mb-6">
-              The UPI QR code and payment details will automatically unlock instantly once the worker clicks Accept on their dashboard.
+              {t('payment.qrDescription')}
             </p>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs text-amber-400">
-              <RefreshCw size={14} className="animate-spin" /> Live polling worker dispatch status...
+              <RefreshCw size={14} className="animate-spin" /> {t('payment.livePolling')}
             </div>
           </GlassCard>
         )}
@@ -288,23 +290,23 @@ export function PaymentPage() {
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    Job Confirmed by {worker.users?.name ?? 'Worker'}
+                     {t('payment.jobConfirmed', { name: worker.users?.name ?? t('payment.workerFallback') })}
                   </span>
                 </div>
-                <Badge variant="emerald">Live UPI Channel</Badge>
+                 <Badge variant="emerald">{t('payment.liveUpi')}</Badge>
               </div>
 
-              <h2 className="mb-4 text-center text-lg font-semibold text-gray-200">Scan to Pay via UPI</h2>
+               <h2 className="mb-4 text-center text-lg font-semibold text-gray-200">{t('payment.scanPay')}</h2>
               <div className="flex justify-center mb-4">
                 <div className="rounded-2xl bg-white p-4 inline-block shadow-2xl">
                   {payment.upi_uri && <QRCodeCanvas value={payment.upi_uri} size={210} level="H" includeMargin={false} />}
                 </div>
               </div>
-              <p className="text-center text-sm text-gray-400 mb-2">Scan with GPay, PhonePe, Paytm, or BHIM</p>
+               <p className="text-center text-sm text-gray-400 mb-2">{t('payment.scanWith')}</p>
 
               <div className="flex items-center justify-center gap-2 mt-4">
                 <div className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm flex items-center gap-2">
-                  <span className="text-gray-400 text-xs font-mono">WORKER UPI: </span>
+                   <span className="text-gray-400 text-xs font-mono">{t('payment.workerUpi')} </span>
                   <span className="font-mono font-bold text-cyan-400">{worker.upi_id}</span>
                 </div>
                 <button
@@ -313,12 +315,12 @@ export function PaymentPage() {
                   className="rounded-xl border border-white/10 bg-slate-900/80 p-2.5 text-gray-400 hover:text-emerald-400 hover:border-emerald-500/40 transition-all flex items-center gap-1.5 text-xs"
                 >
                   {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
+                   <span className="hidden sm:inline">{copied ? t('payment.copied') : t('payment.copy')}</span>
                 </button>
               </div>
 
               <div className="mt-6">
-                <p className="mb-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Or Launch Installed App Directly:</p>
+                 <p className="mb-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">{t('payment.launchApp')}</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {UPI_APPS.map((app) => (
                     <button
@@ -337,10 +339,10 @@ export function PaymentPage() {
 
             <GlassCard className="mb-6 p-6 animate-slide-up">
               <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-gray-200">
-                <ShieldCheck size={20} className="text-emerald-400" /> Submit UPI Reference (UTR)
+                 <ShieldCheck size={20} className="text-emerald-400" /> {t('payment.submitTitle')}
               </h2>
               <p className="mb-4 text-sm text-gray-400">
-                After paying in your UPI app, enter the 12-digit transaction UTR number to submit for worker confirmation.
+                 {t('payment.submitDescription')}
               </p>
 
               {isSubmitted ? (
@@ -348,27 +350,27 @@ export function PaymentPage() {
                   <div className="flex items-center gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4">
                     <Clock size={24} className="text-amber-400 animate-pulse flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-bold text-amber-400">Payment Submitted - Awaiting Worker Confirmation</p>
-                      <p className="text-xs font-mono text-gray-300 mt-1">Submitted UTR: {payment.utr_number}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        An instant alert has been dispatched to {worker.users?.name ?? 'the worker'}. The slip will automatically print once verified.
+                       <p className="text-sm font-bold text-amber-400">{t('payment.paymentSubmitted')}</p>
+                       <p className="text-xs font-mono text-gray-300 mt-1">{t('payment.submittedUtr', { utr: payment.utr_number ?? '' })}</p>
+                       <p className="text-xs text-gray-400 mt-1">
+                         {t('payment.alertDispatched', { name: worker.users?.name ?? t('payment.workerFallback') })}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-2 text-xs text-gray-400 py-1">
-                    <RefreshCw size={14} className="animate-spin text-cyan-400" /> Polling worker confirmation status...
+                     <RefreshCw size={14} className="animate-spin text-cyan-400" /> {t('payment.polling')}
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="mb-4">
                     <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-300">
-                      12-Digit Bank UTR / Transaction Reference <span className="text-emerald-400">*</span>
+                       {t('payment.utrLabel')} <span className="text-emerald-400">*</span>
                     </label>
                     <input
                       value={utrNumber}
                       onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                      placeholder="e.g. 483920194821"
+                       placeholder={t('payment.utrPlaceholder')}
                       className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3.5 text-center font-mono text-xl tracking-widest text-cyan-400 outline-none transition-all focus:border-emerald-400"
                       maxLength={12}
                     />
@@ -382,9 +384,9 @@ export function PaymentPage() {
 
                   <NeonButton fullWidth size="lg" variant="emerald" onClick={handleConfirmPayment} disabled={submitting}>
                     {submitting ? (
-                      <><Loader2 size={18} className="animate-spin" /> Submitting to Worker...</>
-                    ) : (
-                      <>Submit for Worker Confirmation <ArrowRight size={18} /></>
+                       <><Loader2 size={18} className="animate-spin" /> {t('payment.submitting')}</>
+                     ) : (
+                       <>{t('payment.submitButton')} <ArrowRight size={18} /></>
                     )}
                   </NeonButton>
                 </>
@@ -395,7 +397,7 @@ export function PaymentPage() {
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500 text-center">
           <ShieldCheck size={14} className="text-emerald-400 flex-shrink-0" />
-          <span>CoLabour Direct-to-Worker UPI Protocol guarantees 0% commission deductions.</span>
+           <span>{t('payment.protocol')}</span>
         </div>
       </div>
     </div>

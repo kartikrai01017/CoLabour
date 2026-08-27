@@ -13,6 +13,7 @@ import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
 import { fetchCustomerDashboardData } from '@/lib/dataService';
 import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface BookingWithWorker extends Booking {
   worker?: { id: string; category: string; hourly_rate: number; users?: { name: string } | null } | null;
@@ -24,6 +25,7 @@ interface PaymentWithBooking extends Payment {
 
 export function CustomerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t, categoryName, locale } = useLanguage();
   const [bookings, setBookings] = useState<BookingWithWorker[]>([]);
   const [payments, setPayments] = useState<PaymentWithBooking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,20 +79,20 @@ export function CustomerDashboardPage() {
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
-            <h1 className="text-2xl font-bold text-white">My Customer Dashboard</h1>
-            <p className="text-sm text-gray-400">Welcome back, {user?.name}</p>
+            <h1 className="text-2xl font-bold text-white">{t('customer.dashboardTitle')}</h1>
+            <p className="text-sm text-gray-400">{t('customer.welcome', { name: user?.name ?? '' })}</p>
           </div>
           <Link to="/workers">
-            <NeonButton variant="emerald"><Briefcase size={16} /> Book a Worker</NeonButton>
+            <NeonButton variant="emerald"><Briefcase size={16} /> {t('customer.bookWorker')}</NeonButton>
           </Link>
         </div>
 
         {/* Stats */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon={Calendar} label="Active Bookings" value={activeBookings.length} color="cyan" />
-          <StatCard icon={CheckCircle} label="Completed & Paid" value={completedBookings.length} color="emerald" />
-          <StatCard icon={Wallet} label="Total Spent" value={`₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} color="violet" />
-          <StatCard icon={Clock} label="Pending Payments" value={pendingPayments.length} color="amber" />
+          <StatCard icon={Calendar} label={t('customer.activeBookings')} value={activeBookings.length} color="cyan" />
+          <StatCard icon={CheckCircle} label={t('customer.completedPaid')} value={completedBookings.length} color="emerald" />
+          <StatCard icon={Wallet} label={t('customer.totalSpent')} value={`₹${totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`} color="violet" />
+          <StatCard icon={Clock} label={t('customer.pendingPayments')} value={pendingPayments.length} color="amber" />
         </div>
 
         {/* Pending payments alert */}
@@ -99,12 +101,12 @@ export function CustomerDashboardPage() {
             <div className="flex items-center gap-3">
               <AlertCircle size={20} className="text-amber-400 animate-pulse" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment action(s)</p>
-                <p className="text-xs text-gray-400">Complete or track your UPI payment to settle your booking</p>
+                <p className="text-sm font-medium text-amber-400">{t('customer.pendingAlert', { count: pendingPayments.length })}</p>
+                <p className="text-xs text-gray-400">{t('customer.pendingDescription')}</p>
               </div>
               {pendingPayments[0] && (
                 <Link to={`/payment/${pendingPayments[0].booking_id}`}>
-                  <NeonButton size="sm" variant="emerald">Open Payment Gateway <ArrowRight size={14} /></NeonButton>
+                  <NeonButton size="sm" variant="emerald">{t('customer.openGateway')} <ArrowRight size={14} /></NeonButton>
                 </Link>
               )}
             </div>
@@ -115,13 +117,13 @@ export function CustomerDashboardPage() {
           {/* Active bookings */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Clock size={18} className="text-neon-cyan" /> Active Bookings
+              <Clock size={18} className="text-neon-cyan" /> {t('customer.activeBookings')}
             </h2>
             <div className="space-y-4">
               {activeBookings.length === 0 ? (
                 <GlassCard className="p-8 text-center">
-                  <p className="text-gray-500 mb-4">No active bookings</p>
-                  <Link to="/workers"><NeonButton variant="ghost" size="sm">Browse Workers</NeonButton></Link>
+                  <p className="text-gray-500 mb-4">{t('customer.noActive')}</p>
+                  <Link to="/workers"><NeonButton variant="ghost" size="sm">{t('customer.browseWorkers')}</NeonButton></Link>
                 </GlassCard>
               ) : (
                 activeBookings.map((booking) => (
@@ -134,11 +136,11 @@ export function CustomerDashboardPage() {
           {/* Completed & receipts */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Receipt size={18} className="text-neon-emerald" /> History & Official POS Slips
+              <Receipt size={18} className="text-neon-emerald" /> {t('customer.history')}
             </h2>
             <div className="space-y-4">
               {completedBookings.length === 0 ? (
-                <GlassCard className="p-8 text-center text-gray-500">No completed bookings yet</GlassCard>
+                <GlassCard className="p-8 text-center text-gray-500">{t('customer.noCompleted')}</GlassCard>
               ) : (
                 completedBookings.map((booking) => {
                   const p = payments.find((pay) => pay.booking_id === booking.id);
@@ -172,11 +174,11 @@ export function CustomerDashboardPage() {
             </button>
             <CoLabourPrinterEngine
               bookingId={selectedSlip.booking.id}
-              workerName={selectedSlip.booking.worker?.users?.name ?? 'Professional Worker'}
-              workerSkill={selectedSlip.booking.category}
-              customerName={user?.name ?? 'Verified Customer'}
+              workerName={selectedSlip.booking.worker?.users?.name ?? t('customer.professionalWorker')}
+              workerSkill={categoryName(selectedSlip.booking.category)}
+              customerName={user?.name ?? t('customer.verifiedCustomer')}
               date={selectedSlip.payment?.paid_at || selectedSlip.booking.scheduled_at}
-              utrNumber={selectedSlip.payment?.utr_number || 'UPI-OFFICIAL-UTR'}
+              utrNumber={selectedSlip.payment?.utr_number || t('customer.officialUtr')}
               totalAmount={Number(selectedSlip.booking.total_amount)}
               onDone={() => setSelectedSlip(null)}
             />
@@ -214,6 +216,7 @@ function BookingCard({
   showReceipt?: boolean;
   onViewSlip?: () => void;
 }) {
+  const { t, categoryName, locale } = useLanguage();
   const statusColors: Record<string, 'amber' | 'cyan' | 'violet' | 'emerald' | 'gray'> = {
     pending: 'amber',
     confirmed: 'cyan',
@@ -235,41 +238,41 @@ function BookingCard({
             <Icon className={style.text} size={24} />
           </div>
           <div>
-            <h3 className="font-semibold text-white">{booking.worker?.users?.name ?? 'Worker'}</h3>
-            <p className="text-xs text-gray-400">{booking.category}</p>
+            <h3 className="font-semibold text-white">{booking.worker?.users?.name ?? t('customer.workerFallback')}</h3>
+            <p className="text-xs text-gray-400">{categoryName(booking.category)}</p>
           </div>
         </div>
-        <Badge variant={variant}>{booking.status === 'confirmed' ? 'Accepted' : booking.status.replace('_', ' ')}</Badge>
+        <Badge variant={variant}>{getStatusLabel(booking.status, t)}</Badge>
       </div>
       <div className="space-y-1.5 text-sm text-gray-400 mb-3">
-        <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(booking.scheduled_at).toLocaleString()}</div>
+        <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(booking.scheduled_at).toLocaleString(locale)}</div>
         <div className="flex items-center gap-2"><MapPin size={14} /> {booking.address}</div>
         <div className="flex items-center gap-2"><Wallet size={14} /> ₹{Number(booking.total_amount).toFixed(2)}</div>
       </div>
       <div className="flex gap-2">
         {booking.status === 'pending' && (
           <Link to={`/payment/${booking.id}`}>
-            <NeonButton size="sm" variant="amber">Waiting for Acceptance <ArrowRight size={14} /></NeonButton>
+            <NeonButton size="sm" variant="amber">{t('customer.waitingAcceptance')} <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
         {booking.status === 'confirmed' && (
           <Link to={`/payment/${booking.id}`}>
-            <NeonButton size="sm" variant="emerald">Pay Worker via UPI <ArrowRight size={14} /></NeonButton>
+            <NeonButton size="sm" variant="emerald">{t('customer.payWorker')} <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
         {booking.status === 'payment_submitted' && (
           <Link to={`/payment/${booking.id}`}>
-            <NeonButton size="sm" variant="cyan">Track Verification <ArrowRight size={14} /></NeonButton>
+            <NeonButton size="sm" variant="cyan">{t('customer.trackVerification')} <ArrowRight size={14} /></NeonButton>
           </Link>
         )}
         {showReceipt && (booking.status === 'paid' || booking.status === 'completed') && (
           <div className="flex items-center justify-between w-full">
             <span className="flex items-center gap-1.5 text-xs text-neon-emerald font-medium">
-              <CheckCircle size={14} /> Payment Settled
+              <CheckCircle size={14} /> {t('customer.paymentSettled')}
             </span>
             {onViewSlip && (
               <NeonButton size="sm" variant="ghost" onClick={onViewSlip} className="text-xs">
-                <Eye size={14} /> View CoLabour Slip
+                <Eye size={14} /> {t('customer.viewSlip')}
               </NeonButton>
             )}
           </div>
@@ -277,4 +280,17 @@ function BookingCard({
       </div>
     </GlassCard>
   );
+}
+
+function getStatusLabel(status: string | undefined, t: (key: string) => string): string {
+  switch (status) {
+    case 'confirmed': return t('customer.statusAccepted');
+    case 'pending': return t('customer.statusPending');
+    case 'in_progress': return t('customer.statusInProgress');
+    case 'payment_submitted': return t('customer.statusPaymentSubmitted');
+    case 'completed': return t('customer.statusCompleted');
+    case 'paid': return t('customer.statusPaid');
+    case 'cancelled': return t('customer.statusCancelled');
+    default: return status ?? t('customer.statusPending');
+  }
 }

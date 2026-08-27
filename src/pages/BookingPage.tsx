@@ -18,11 +18,13 @@ import {
   calculateReachTimeMinutes,
   DEFAULT_COORDINATES,
 } from '@/lib/geo';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function BookingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, categoryName } = useLanguage();
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -91,13 +93,16 @@ export function BookingPage() {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setUserCoords(coords);
           if (!address) {
-            setAddress(`Current GPS Location (Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)})`);
+            setAddress(t('booking.currentGpsLocation', {
+              lat: pos.coords.latitude.toFixed(4),
+              lng: pos.coords.longitude.toFixed(4),
+            }));
           }
         },
-        () => setError('Could not get your location. Please enter address manually.')
+        () => setError(t('booking.locationError'))
       );
     } else {
-      setError('Geolocation is not supported on this device.');
+      setError(t('booking.geoUnsupported'));
     }
   };
 
@@ -107,13 +112,13 @@ export function BookingPage() {
 
     if (!user || !worker) return;
     if (!date || !time || !address) {
-      setError('Please fill in all required fields');
+      setError(t('booking.requiredFields'));
       return;
     }
 
     const scheduledAt = new Date(`${date}T${time}`);
     if (scheduledAt < new Date()) {
-      setError('Scheduled time must be in the future');
+      setError(t('booking.futureTime'));
       return;
     }
 
@@ -141,7 +146,7 @@ export function BookingPage() {
       setShowRadarModal(false);
       navigate(`/payment/${booking.id}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create booking';
+      const msg = err instanceof Error ? err.message : t('booking.createFailed');
       setError(msg);
       setShowRadarModal(false);
     } finally {
@@ -160,8 +165,8 @@ export function BookingPage() {
   if (!worker) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
-        <p className="text-gray-400">Worker not found.</p>
-        <Link to="/workers"><NeonButton variant="ghost">Browse Workers</NeonButton></Link>
+        <p className="text-gray-400">{t('booking.workerNotFound')}</p>
+        <Link to="/workers"><NeonButton variant="ghost">{t('booking.browseWorkers')}</NeonButton></Link>
       </div>
     );
   }
@@ -177,7 +182,7 @@ export function BookingPage() {
       {/* Radar Scanner Modal */}
       <RadarScannerModal
         isOpen={showRadarModal}
-        workerName={worker.users?.name ?? 'Professional Worker'}
+        workerName={worker.users?.name ?? t('booking.professionalWorker')}
         workerCategory={worker.category}
         workerRate={worker.hourly_rate}
         workerLocation={worker.location}
@@ -188,12 +193,12 @@ export function BookingPage() {
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <Link to={`/workers/${id}`} className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emerald transition-colors">
-          <ArrowLeft size={16} /> Back to Profile
+          <ArrowLeft size={16} /> {t('booking.backToProfile')}
         </Link>
 
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold gradient-text-emerald-cyan">Book Your Appointment</h1>
-          <p className="mt-2 text-gray-400">Schedule a service with {worker.users?.name}</p>
+           <h1 className="text-3xl font-bold gradient-text-emerald-cyan">{t('booking.title')}</h1>
+           <p className="mt-2 text-gray-400">{t('booking.subtitle', { name: worker.users?.name ?? t('booking.professionalWorker') })}</p>
         </div>
 
         {/* Worker summary & live proximity badge */}
@@ -204,27 +209,27 @@ export function BookingPage() {
             </div>
             <div>
               <h3 className="font-semibold text-white">{worker.users?.name}</h3>
-              <p className="text-sm text-gray-400">{worker.category} • ₹{worker.hourly_rate}/hr</p>
+               <p className="text-sm text-gray-400">{categoryName(worker.category)} • ₹{worker.hourly_rate}/hr</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-neon-emerald/15 px-2 py-0.5 text-[11px] font-bold text-neon-emerald border border-neon-emerald/30">
-                  <Navigation size={11} /> {distanceKm.toFixed(1)} km away
+                   <Navigation size={11} /> {t('booking.kmAway', { distance: distanceKm.toFixed(1) })}
                 </span>
-                <span className="text-[11px] text-gray-400">~{reachTime} mins reach</span>
+                <span className="text-[11px] text-gray-400">{t('booking.minsReach', { minutes: reachTime })}</span>
               </div>
             </div>
           </div>
-          <Badge variant="emerald"><Check size={12} /> Verified Professional</Badge>
+          <Badge variant="emerald"><Check size={12} /> {t('booking.verifiedProfessional')}</Badge>
         </GlassCard>
 
         <form onSubmit={handlePreSubmit} className="space-y-6">
           {/* Date & Time */}
           <GlassCard className="p-6">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Calendar size={18} className="text-neon-cyan" /> Date & Time
+              <Calendar size={18} className="text-neon-cyan" /> {t('booking.dateTime')}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Date</label>
+                 <label className="mb-1.5 block text-sm font-medium text-gray-300">{t('booking.date')}</label>
                 <input
                   type="date"
                   value={date}
@@ -235,7 +240,7 @@ export function BookingPage() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Time</label>
+                 <label className="mb-1.5 block text-sm font-medium text-gray-300">{t('booking.time')}</label>
                 <input
                   type="time"
                   value={time}
@@ -246,7 +251,7 @@ export function BookingPage() {
               </div>
             </div>
             <div className="mt-4">
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Duration (hours)</label>
+               <label className="mb-1.5 block text-sm font-medium text-gray-300">{t('booking.duration')}</label>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -270,7 +275,7 @@ export function BookingPage() {
                 >
                   +
                 </button>
-                <span className="text-sm text-gray-400">hours</span>
+                 <span className="text-sm text-gray-400">{t('booking.hours')}</span>
               </div>
             </div>
           </GlassCard>
@@ -279,28 +284,28 @@ export function BookingPage() {
           <GlassCard className="p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-200">
-                <MapPin size={18} className="text-neon-emerald" /> Service Location & Live GPS
+                 <MapPin size={18} className="text-neon-emerald" /> {t('booking.serviceLocation')}
               </h2>
               <span className="flex items-center gap-1 rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-2.5 py-0.5 text-xs font-mono text-neon-cyan">
-                <Radio size={12} className="animate-pulse" /> Live Radar Ready
+                 <Radio size={12} className="animate-pulse" /> {t('booking.liveRadarReady')}
               </span>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Address / Flat / Landmark</label>
+                 <label className="mb-1.5 block text-sm font-medium text-gray-300">{t('booking.address')}</label>
                 <textarea
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   required
-                  placeholder="Enter your full address..."
+                   placeholder={t('booking.addressPlaceholder')}
                   className="booking-input min-h-[80px] resize-none"
                 />
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
                 <NeonButton type="button" variant="ghost" size="sm" onClick={handleUseMyLocation}>
-                  <Navigation size={16} /> Use My Current GPS Location
+                   <Navigation size={16} /> {t('booking.useGps')}
                 </NeonButton>
                 {userCoords && (
                   <span className="text-xs text-gray-400 font-mono">
@@ -321,8 +326,8 @@ export function BookingPage() {
                     <Navigation size={20} />
                   </div>
                   <div className="text-center">
-                    <p className="text-xs font-bold text-white">Live Proximity: {distanceKm.toFixed(1)} km</p>
-                    <p className="text-[10px] text-gray-400">Worker is stationed near {worker.location ?? 'Bangalore'}</p>
+                     <p className="text-xs font-bold text-white">{t('booking.liveProximity', { distance: distanceKm.toFixed(1) })}</p>
+                     <p className="text-[10px] text-gray-400">{t('booking.workerStationed', { location: worker.location ?? t('booking.defaultLocation') })}</p>
                   </div>
                 </div>
               </div>
@@ -332,28 +337,28 @@ export function BookingPage() {
           {/* Notes */}
           <GlassCard className="p-6">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Clock size={18} className="text-neon-violet" /> Problem Description & Notes
+               <Clock size={18} className="text-neon-violet" /> {t('booking.problemNotes')}
             </h2>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Describe the issue (e.g. Inverter tripping, bathroom pipe leak, fan capacitor replacement)..."
+               placeholder={t('booking.notesPlaceholder')}
               className="booking-input min-h-[80px] resize-none"
             />
           </GlassCard>
 
           {/* Summary & Proceed with Radar */}
           <GlassCard className="p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-200">Booking Summary</h2>
+             <h2 className="mb-4 text-lg font-semibold text-gray-200">{t('booking.summary')}</h2>
             <div className="space-y-2 mb-4">
-              <SummaryRow label="Worker" value={worker.users?.name ?? ''} />
-              <SummaryRow label="Category" value={worker.category} />
-              <SummaryRow label="Duration" value={`${hours} hour(s)`} />
-              <SummaryRow label="Rate" value={`₹${worker.hourly_rate}/hr`} />
-              <SummaryRow label="Distance" value={`${distanceKm.toFixed(1)} km (~${reachTime} mins)`} />
+               <SummaryRow label={t('booking.worker')} value={worker.users?.name ?? ''} />
+               <SummaryRow label={t('booking.category')} value={categoryName(worker.category)} />
+               <SummaryRow label={t('booking.duration')} value={t('booking.durationValue', { hours })} />
+               <SummaryRow label={t('booking.rate')} value={t('booking.rateValue', { rate: worker.hourly_rate })} />
+               <SummaryRow label={t('booking.distance')} value={t('booking.distanceValue', { distance: distanceKm.toFixed(1), minutes: reachTime })} />
               <div className="border-t border-white/10 pt-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-200">Total Amount (0% fee)</span>
+                   <span className="text-lg font-semibold text-gray-200">{t('booking.totalAmount')}</span>
                   <span className="text-2xl font-bold gradient-text-emerald-cyan">₹{totalAmount.toFixed(2)}</span>
                 </div>
               </div>
@@ -367,9 +372,9 @@ export function BookingPage() {
 
             <NeonButton type="submit" fullWidth size="lg" disabled={submitting}>
               {submitting ? (
-                <><Loader2 size={18} className="animate-spin" /> Dispatching...</>
+                 <><Loader2 size={18} className="animate-spin" /> {t('booking.dispatching')}</>
               ) : (
-                <><Radio size={18} className="animate-pulse" /> Launch GPS Radar & Match <ArrowRight size={18} /></>
+                 <><Radio size={18} className="animate-pulse" /> {t('booking.launchRadar')} <ArrowRight size={18} /></>
               )}
             </NeonButton>
           </GlassCard>

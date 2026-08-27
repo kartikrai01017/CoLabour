@@ -11,11 +11,13 @@ import { type WorkerWithUser } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWorkerProfile } from '@/lib/dataService';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function WorkerProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, categoryName } = useLanguage();
   const [worker, setWorker] = useState<WorkerWithUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +50,7 @@ export function WorkerProfilePage() {
       return;
     }
     if (user.role === 'worker') {
-      alert('Workers cannot book other workers. Please sign in as a customer.');
+      alert(t('profile.cannotBookWorkers'));
       return;
     }
     navigate(`/book/${id}`);
@@ -65,8 +67,8 @@ export function WorkerProfilePage() {
   if (!worker) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
-        <p className="text-gray-400">Worker not found.</p>
-        <Link to="/workers"><NeonButton variant="ghost">Browse Workers</NeonButton></Link>
+        <p className="text-gray-400">{t('profile.workerNotFound')}</p>
+        <Link to="/workers"><NeonButton variant="ghost">{t('profile.browseWorkers')}</NeonButton></Link>
       </div>
     );
   }
@@ -81,7 +83,7 @@ export function WorkerProfilePage() {
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <Link to="/workers" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emerald transition-colors">
-          <ArrowLeft size={16} /> Back to Workers
+          <ArrowLeft size={16} /> {t('profile.backToWorkers')}
         </Link>
 
         {/* Hero card */}
@@ -92,15 +94,15 @@ export function WorkerProfilePage() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-white">{worker.users?.name ?? 'Unknown Worker'}</h1>
+                <h1 className="text-3xl font-bold text-white">{worker.users?.name ?? t('profile.unknownWorker')}</h1>
                 {worker.is_verified && (
-                  <Badge variant="emerald"><ShieldCheck size={12} /> Verified</Badge>
+                  <Badge variant="emerald"><ShieldCheck size={12} /> {t('profile.verified')}</Badge>
                 )}
               </div>
-              <p className="text-lg text-gray-400 mb-3">{worker.category}</p>
+              <p className="text-lg text-gray-400 mb-3">{categoryName(worker.category)}</p>
               <div className="flex flex-wrap items-center gap-4">
                 <StarRating rating={worker.rating} size={18} />
-                <span className="text-sm text-gray-500">({worker.total_ratings} reviews)</span>
+                <span className="text-sm text-gray-500">{t('profile.reviews', { count: worker.total_ratings ?? 0 })}</span>
                 {worker.location && (
                   <span className="flex items-center gap-1 text-sm text-gray-400">
                     <MapPin size={14} className="text-gray-500" /> {worker.location}
@@ -111,10 +113,10 @@ export function WorkerProfilePage() {
             <div className="flex flex-col sm:items-end justify-between">
               <div className="text-right">
                 <span className="text-3xl font-bold text-white">₹{worker.hourly_rate}</span>
-                <span className="text-gray-400 text-sm">/hr</span>
+                <span className="text-gray-400 text-sm">{t('profile.perHour')}</span>
               </div>
               <NeonButton onClick={handleBook} size="lg" variant="emerald" className="mt-4">
-                Book Now <ArrowRight size={18} />
+                {t('profile.bookNow')} <ArrowRight size={18} />
               </NeonButton>
             </div>
           </div>
@@ -125,13 +127,13 @@ export function WorkerProfilePage() {
           {/* Bio */}
           <GlassCard className="p-6 md:col-span-2">
             <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <Briefcase size={18} className="text-neon-emerald" /> About
+              <Briefcase size={18} className="text-neon-emerald" /> {t('profile.about')}
             </h2>
             <p className="text-gray-300 leading-relaxed text-sm">
-              {worker.bio || 'No bio provided.'}
+              {worker.bio || t('profile.noBio')}
             </p>
 
-            <h3 className="text-sm font-semibold text-gray-400 mt-6 mb-3">Skills & Specializations</h3>
+            <h3 className="text-sm font-semibold text-gray-400 mt-6 mb-3">{t('profile.skills')}</h3>
             <div className="flex flex-wrap gap-2">
               {worker.skills?.map((skill) => (
                 <span key={skill} className="rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-gray-200">
@@ -144,30 +146,30 @@ export function WorkerProfilePage() {
           {/* Quick Info */}
           <div className="space-y-6">
             <GlassCard className="p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Highlights</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">{t('profile.highlights')}</h2>
               <div className="space-y-4 text-sm">
                 <div className="flex items-center gap-3 text-gray-300">
                   <ShieldCheck size={18} className="text-neon-emerald shrink-0" />
-                  <span>100% Background Verified</span>
+                  <span>{t('profile.backgroundVerified')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-300">
                   <Wallet size={18} className="text-neon-cyan shrink-0" />
-                  <span>Direct UPI Payments</span>
+                  <span>{t('profile.directUpi')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-300">
                   <Clock size={18} className="text-neon-cyan shrink-0" />
-                  <span>Prompt Response Rate</span>
+                  <span>{t('profile.promptResponse')}</span>
                 </div>
               </div>
             </GlassCard>
 
             <GlassCard className="p-6">
-              <h2 className="text-lg font-semibold text-white mb-2">Need Custom Work?</h2>
+              <h2 className="text-lg font-semibold text-white mb-2">{t('profile.customWork')}</h2>
               <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                You can specify exact requirements and provide special notes during the booking step.
+                {t('profile.customWorkDescription')}
               </p>
               <NeonButton onClick={handleBook} fullWidth size="md" variant="cyan">
-                Request Service
+                {t('profile.requestService')}
               </NeonButton>
             </GlassCard>
           </div>
@@ -176,7 +178,7 @@ export function WorkerProfilePage() {
         {/* Reviews Section */}
         <GlassCard className="p-6">
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <MessageSquare size={18} className="text-neon-emerald" /> Customer Reviews ({worker.total_ratings})
+            <MessageSquare size={18} className="text-neon-emerald" /> {t('profile.customerReviews', { count: worker.total_ratings ?? 0 })}
           </h2>
           <div className="space-y-4">
             <div className="border-b border-white/5 pb-4">
@@ -185,7 +187,7 @@ export function WorkerProfilePage() {
                 <StarRating rating={5} size={14} />
               </div>
               <p className="text-xs text-gray-400">
-                Extremely skilled, arrived right on time, and resolved the issue quickly. Highly recommended!
+                {t('profile.reviewOne')}
               </p>
             </div>
             <div className="border-b border-white/5 pb-4">
@@ -194,7 +196,7 @@ export function WorkerProfilePage() {
                 <StarRating rating={4.8} size={14} />
               </div>
               <p className="text-xs text-gray-400">
-                Very courteous and professional. Clean work and fair hourly rate.
+                {t('profile.reviewTwo')}
               </p>
             </div>
           </div>

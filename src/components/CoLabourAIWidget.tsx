@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { fetchWorkersList } from '@/lib/dataService';
 import { type WorkerWithUser } from '@/lib/supabase';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Message {
   id: string;
@@ -22,14 +23,16 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  '⚡ Estimate Wiring Cost',
-  '📍 Find Plumber Near Me',
-  '💸 Zero-Fee UPI & UTR Guide',
-  '🧾 How POS Slips Work',
+  { key: 'ai.quickWiring', query: 'Estimate wiring cost' },
+  { key: 'ai.quickPlumber', query: 'Find plumber near me' },
+  { key: 'ai.quickUpi', query: 'Zero-fee UPI and UTR guide' },
+  { key: 'ai.quickSlip', query: 'How POS slips work' },
 ];
 
 export function CoLabourAIWidget() {
   const navigate = useNavigate();
+  const { t, language, categoryName, locale } = useLanguage();
+  const welcomeText = t('ai.welcome');
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -38,8 +41,8 @@ export function CoLabourAIWidget() {
     {
       id: 'm-welcome',
       sender: 'ai',
-      text: '👋 Namaste! I am CoLabour AI, your intelligent gig assistant. I can estimate repair costs, find the nearest verified professional, or explain our direct 0% commission UPI checkout.',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: welcomeText,
+      timestamp: new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
 
@@ -53,11 +56,22 @@ export function CoLabourAIWidget() {
     if (isOpen) scrollToBottom();
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    setMessages([{
+      id: 'm-welcome',
+      sender: 'ai',
+      text: welcomeText,
+      timestamp: new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+    }]);
+    setInput('');
+  }, [language, locale, welcomeText]);
+
   const speakText = (text: string) => {
     if (!ttsEnabled || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text.replace(/[*_#`]/g, ''));
+      utterance.lang = locale;
       utterance.rate = 1.05;
       utterance.pitch = 1.0;
       window.speechSynthesis.speak(utterance);
@@ -74,7 +88,7 @@ export function CoLabourAIWidget() {
       id: `usr-${Date.now()}`,
       sender: 'user',
       text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -82,12 +96,12 @@ export function CoLabourAIWidget() {
     setIsTyping(true);
 
     setTimeout(async () => {
-      const response = await generateAIResponse(query);
+       const response = await generateAIResponse(query, t);
       const aiMsg: Message = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
         text: response.text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+         timestamp: new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
         action: response.action,
       };
 
@@ -111,8 +125,8 @@ export function CoLabourAIWidget() {
             <Sparkles size={13} className="animate-spin text-neon-cyan" />
             <span className="absolute inset-0 animate-ping rounded-full bg-neon-cyan/20" />
           </div>
-          <span>Ask CoLabour AI</span>
-          <span className="rounded-full bg-neon-cyan/20 px-1.5 py-0.5 text-[9px] font-mono text-neon-cyan uppercase">Smart</span>
+           <span>{t('ai.launcher')}</span>
+           <span className="rounded-full bg-neon-cyan/20 px-1.5 py-0.5 text-[9px] font-mono text-neon-cyan uppercase">{t('ai.smart')}</span>
         </motion.button>
       </div>
 
@@ -135,10 +149,10 @@ export function CoLabourAIWidget() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                      CoLabour AI Assistant
+                       {t('ai.title')}
                       <span className="inline-block h-2 w-2 rounded-full bg-neon-emerald animate-pulse" />
                     </h3>
-                    <p className="text-[10px] text-gray-400">0% Commission • Live Geolocation & Smart Pricing</p>
+                     <p className="text-[10px] text-gray-400">{t('ai.subtitle')}</p>
                   </div>
                 </div>
 
@@ -149,7 +163,7 @@ export function CoLabourAIWidget() {
                       setTtsEnabled(!ttsEnabled);
                       if (ttsEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
                     }}
-                    title={ttsEnabled ? 'Mute AI Voice' : 'Enable AI Voice'}
+                     title={ttsEnabled ? t('ai.mute') : t('ai.enable')}
                     className={`rounded-lg p-1.5 transition-colors ${
                       ttsEnabled ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-400 hover:text-white'
                     }`}
@@ -197,7 +211,7 @@ export function CoLabourAIWidget() {
                                 <span className="font-bold text-white text-xs">{m.action.worker.users?.name}</span>
                                 <span className="text-neon-emerald font-bold">₹{m.action.worker.hourly_rate}/hr</span>
                               </div>
-                              <p className="text-[10px] text-gray-400">{m.action.worker.category} • ⭐ {m.action.worker.rating} ({m.action.worker.total_ratings} reviews)</p>
+                               <p className="text-[10px] text-gray-400">{categoryName(m.action.worker.category)} • ⭐ {m.action.worker.rating} ({m.action.worker.total_ratings} {t('common.reviews')})</p>
                             </div>
                           )}
                           <button
@@ -244,14 +258,14 @@ export function CoLabourAIWidget() {
 
               {/* Quick Prompt Chips */}
               <div className="border-t border-white/10 bg-base-950/40 p-2 overflow-x-auto flex gap-1.5 scrollbar-none">
-                {QUICK_PROMPTS.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => handleSend(prompt)}
+                 {QUICK_PROMPTS.map((prompt) => (
+                   <button
+                     key={prompt.key}
+                     type="button"
+                     onClick={() => handleSend(prompt.query)}
                     className="flex-shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-gray-300 hover:border-neon-cyan/40 hover:bg-neon-cyan/10 hover:text-white transition-all"
                   >
-                    {prompt}
+                     {t(prompt.key)}
                   </button>
                 ))}
               </div>
@@ -269,7 +283,7 @@ export function CoLabourAIWidget() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask about pricing, workers, or UPI payments..."
+                     placeholder={t('ai.inputPlaceholder')}
                     className="flex-1 rounded-xl border border-white/10 bg-base-900 px-3.5 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-neon-cyan/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.2)]"
                   />
                   <button
@@ -290,7 +304,7 @@ export function CoLabourAIWidget() {
 }
 
 // AI response generator with local heuristic intelligence
-async function generateAIResponse(query: string): Promise<{
+async function generateAIResponse(query: string, t: (key: string, values?: Record<string, string | number>) => string): Promise<{
   text: string;
   action?: {
     type: 'worker_card' | 'navigate';
@@ -302,72 +316,92 @@ async function generateAIResponse(query: string): Promise<{
   const q = query.toLowerCase();
 
   // 1. Cost & Job Estimations
-  if (q.includes('wiring') || q.includes('switchboard') || q.includes('electric') || q.includes('mcb')) {
+  if (
+    q.includes('wiring') || q.includes('switchboard') || q.includes('electric') || q.includes('mcb') ||
+    q.includes('वायरिंग') || q.includes('इलेक्ट्रिक') || q.includes('बिजली') || q.includes('वीज') ||
+    q.includes('इलेक्ट्रिशियन')
+  ) {
     return {
-      text: `⚡ **Electrical Job Estimate:**\n• **Typical Cost:** ₹350 - ₹650 depending on points\n• **Est. Time:** 45 - 90 mins\n• **Zero Platform Fee:** ₹0 deducted from worker\n\nWould you like to book Rajesh Kumar (Top Rated Electrician, ₹450/hr)?`,
+      text: t('ai.electricalEstimate'),
       action: {
         type: 'worker_card',
-        label: 'Book Rajesh Kumar (Electrician)',
+        label: t('ai.bookRajesh'),
         url: '/book/wp-1',
       },
     };
   }
 
-  if (q.includes('plumber') || q.includes('pipe') || q.includes('leak') || q.includes('tap') || q.includes('geyser')) {
+  if (
+    q.includes('plumber') || q.includes('pipe') || q.includes('leak') || q.includes('tap') || q.includes('geyser') ||
+    q.includes('प्लंबर') || q.includes('पाइप') || q.includes('लीक') || q.includes('नल') || q.includes('गळती')
+  ) {
     try {
       const workers = await fetchWorkersList('Plumber');
       const topPlumber = workers[0];
       return {
-        text: `📍 **Plumbing Service Match:**\n• **Estimated Cost:** ₹300 - ₹500\n• **Typical Resolution:** 30 - 60 mins\n\nTop match: **${topPlumber?.users?.name ?? 'Amit Patel'}** (⭐ ${topPlumber?.rating ?? 4.9}, ₹${topPlumber?.hourly_rate ?? 400}/hr). Verified for high-pressure leak repairs.`,
+        text: t('ai.plumbingMatch', {
+          name: topPlumber?.users?.name ?? 'Amit Patel',
+          rating: topPlumber?.rating ?? 4.9,
+          rate: topPlumber?.hourly_rate ?? 400,
+        }),
         action: {
           type: 'worker_card',
-          label: `Book ${topPlumber?.users?.name ?? 'Amit Patel'}`,
+          label: t('ai.bookWorker', { name: topPlumber?.users?.name ?? 'Amit Patel' }),
           url: `/book/${topPlumber?.id ?? 'wp-3'}`,
           worker: topPlumber,
         },
       };
     } catch {
       return {
-        text: `📍 **Plumbing Service Match:**\nTop verified match is **Amit Patel** (⭐ 4.9, ₹400/hr). Specializes in concealed pipe repairs, tap fixes, and geysers.`,
+        text: t('ai.plumbingFallback'),
         action: {
           type: 'worker_card',
-          label: 'Book Amit Patel (Plumber)',
+          label: t('ai.bookAmit'),
           url: '/book/wp-3',
         },
       };
     }
   }
 
-  if (q.includes('clean') || q.includes('maid') || q.includes('sofa') || q.includes('deep clean')) {
+  if (
+    q.includes('clean') || q.includes('maid') || q.includes('sofa') || q.includes('deep clean') ||
+    q.includes('क्लीन') || q.includes('सफाई') || q.includes('स्वच्छ') || q.includes('क्लीनिंग')
+  ) {
     return {
-      text: `🧹 **Deep Cleaning & Sanitization:**\n• **1 BHK / Standard:** ₹700 - ₹1,200\n• **Kitchen & Bath Deep Clean:** ₹400 - ₹800\n• **Eco-friendly Products:** 100% pet safe\n\nTop match: **Priya Sharma** (⭐ 4.8, ₹350/hr).`,
+      text: t('ai.cleaning'),
       action: {
         type: 'worker_card',
-        label: 'Book Priya Sharma (Cleaner)',
+        label: t('ai.bookPriya'),
         url: '/book/wp-2',
       },
     };
   }
 
   // 2. Zero-fee & Payment Guide
-  if (q.includes('payment') || q.includes('upi') || q.includes('utr') || q.includes('fee') || q.includes('zero')) {
+  if (
+    q.includes('payment') || q.includes('upi') || q.includes('utr') || q.includes('fee') || q.includes('zero') ||
+    q.includes('भुगतान') || q.includes('पेमेंट') || q.includes('शुल्क') || q.includes('पैसे')
+  ) {
     return {
-      text: `💸 **How CoLabour Direct UPI Works:**\n1. **Direct Peer-to-Peer:** 100% of your money goes straight to the worker's bank account via UPI. CoLabour charges **0% commission**.\n2. **Locked State:** QR code unlocks as soon as the worker accepts your booking.\n3. **UTR Verification:** Enter your bank's 12-digit transaction ID (UTR) to instantly notify the worker.\n4. **Official POS Slip:** Receive a digitally signed POS thermal slip receipt.`,
+      text: t('ai.upiGuide'),
       action: {
         type: 'navigate',
-        label: 'Browse Verified Workers',
+        label: t('ai.browseWorkers'),
         url: '/workers',
       },
     };
   }
 
   // 3. POS Slip info
-  if (q.includes('slip') || q.includes('pos') || q.includes('receipt') || q.includes('invoice')) {
+  if (
+    q.includes('slip') || q.includes('pos') || q.includes('receipt') || q.includes('invoice') ||
+    q.includes('स्लिप') || q.includes('रसीद') || q.includes('इनवॉइस') || q.includes('पावती')
+  ) {
     return {
-      text: `🧾 **CoLabour 3D Thermal Slip Engine:**\nEvery completed and verified booking generates an official POS hardware receipt featuring:\n• Zero-fee breakdown\n• 12-digit Bank UTR record\n• Authenticated QR stamp\n• PDF download & direct thermal printer output.`,
+      text: t('ai.slipEngine'),
       action: {
         type: 'navigate',
-        label: 'Open Customer Dashboard',
+        label: t('ai.openDashboard'),
         url: '/customer/dashboard',
       },
     };
@@ -375,10 +409,10 @@ async function generateAIResponse(query: string): Promise<{
 
   // 4. General Directory / Default
   return {
-    text: `✨ I can help you find certified electricians, plumbers, carpenters, and cleaners with instant GPS proximity matching.\n\nTell me what you need fixed (e.g. "Fix ceiling fan", "Kitchen pipe leaking") or explore our directory of verified professionals.`,
+    text: t('ai.defaultResponse'),
     action: {
       type: 'navigate',
-      label: 'Explore All Workers Directory',
+      label: t('ai.exploreDirectory'),
       url: '/workers',
     },
   };

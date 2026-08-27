@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Zap, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
+import { Zap, Menu, X, LogOut, LayoutDashboard, Languages } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage, type Language } from '@/context/LanguageContext';
 import { NeonButton } from '@/components/ui/NeonButton';
 
 export function Navbar() {
   const { user, signOut } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -36,26 +38,27 @@ export function Navbar() {
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
-            <NavLink to="/" active={isActive('/')}>Home</NavLink>
-            <NavLink to="/workers" active={isActive('/workers')}>Workers</NavLink>
-            {user && <NavLink to={dashboardLink} active={isActive(dashboardLink)}>Dashboard</NavLink>}
+            <NavLink to="/" active={isActive('/')}>{t('nav.home')}</NavLink>
+            <NavLink to="/workers" active={isActive('/workers')}>{t('nav.workers')}</NavLink>
+            {user && <NavLink to={dashboardLink} active={isActive(dashboardLink)}>{t('nav.dashboard')}</NavLink>}
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            <LanguageSelector language={language} setLanguage={setLanguage} label={t('language.select')} />
             {user ? (
               <>
                 <Link to={dashboardLink} className="flex items-center gap-2 rounded-xl glass px-4 py-2 text-sm hover:border-neon-emerald/30 transition-all">
                   <LayoutDashboard size={16} className="text-neon-cyan" />
-                  <span className="text-gray-300">{user.role === 'worker' ? 'Worker' : user.role === 'admin' ? 'Admin' : 'My Dashboard'}</span>
+                  <span className="text-gray-300">{user.role === 'worker' ? t('nav.worker') : user.role === 'admin' ? t('nav.admin') : t('nav.myDashboard')}</span>
                 </Link>
-                <button onClick={handleSignOut} className="rounded-xl p-2.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Sign out">
+                <button onClick={handleSignOut} className="rounded-xl p-2.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all" title={t('nav.signOut')}>
                   <LogOut size={18} />
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login"><NeonButton variant="ghost" size="sm">Sign In</NeonButton></Link>
-                <Link to="/signup"><NeonButton size="sm">Get Started</NeonButton></Link>
+                <Link to="/login"><NeonButton variant="ghost" size="sm">{t('nav.signIn')}</NeonButton></Link>
+                <Link to="/signup"><NeonButton size="sm">{t('nav.getStarted')}</NeonButton></Link>
               </>
             )}
           </div>
@@ -68,22 +71,54 @@ export function Navbar() {
 
       {mobileOpen && (
         <div className="md:hidden glass-strong border-t border-white/5 px-4 py-4 space-y-2 animate-fade-in">
-          <MobileLink to="/" onClick={() => setMobileOpen(false)}>Home</MobileLink>
-          <MobileLink to="/workers" onClick={() => setMobileOpen(false)}>Workers</MobileLink>
-          {user && <MobileLink to={dashboardLink} onClick={() => setMobileOpen(false)}>Dashboard</MobileLink>}
+          <MobileLink to="/" onClick={() => setMobileOpen(false)}>{t('nav.home')}</MobileLink>
+          <MobileLink to="/workers" onClick={() => setMobileOpen(false)}>{t('nav.workers')}</MobileLink>
+          {user && <MobileLink to={dashboardLink} onClick={() => setMobileOpen(false)}>{t('nav.dashboard')}</MobileLink>}
+          <LanguageSelector language={language} setLanguage={setLanguage} label={t('language.select')} mobile />
           {user ? (
             <button onClick={() => { setMobileOpen(false); handleSignOut(); }} className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-red-400 hover:bg-red-500/10">
-              <LogOut size={18} /> Sign Out
+              <LogOut size={18} /> {t('nav.signOut')}
             </button>
           ) : (
             <div className="flex gap-2 pt-2">
-              <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}><NeonButton variant="ghost" fullWidth>Sign In</NeonButton></Link>
-              <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}><NeonButton fullWidth>Get Started</NeonButton></Link>
+              <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}><NeonButton variant="ghost" fullWidth>{t('nav.signIn')}</NeonButton></Link>
+              <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}><NeonButton fullWidth>{t('nav.getStarted')}</NeonButton></Link>
             </div>
           )}
         </div>
       )}
     </nav>
+  );
+}
+
+function LanguageSelector({
+  language,
+  setLanguage,
+  label,
+  mobile = false,
+}: {
+  language: Language;
+  setLanguage: (language: Language) => void;
+  label: string;
+  mobile?: boolean;
+}) {
+  const { t } = useLanguage();
+
+  return (
+    <label className={`flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-gray-400 ${mobile ? 'w-full' : ''}`}>
+      <Languages size={16} className="text-neon-cyan" />
+      <span className="sr-only">{label}</span>
+      <select
+        aria-label={label}
+        value={language}
+        onChange={(event) => setLanguage(event.target.value as Language)}
+        className="w-full cursor-pointer appearance-none bg-transparent text-sm text-gray-300 outline-none"
+      >
+        <option value="en" className="bg-base-800">{t('language.english')}</option>
+        <option value="hi" className="bg-base-800">{t('language.hindi')}</option>
+        <option value="mr" className="bg-base-800">{t('language.marathi')}</option>
+      </select>
+    </label>
   );
 }
 

@@ -10,8 +10,10 @@ import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { fetchPlatformStats, type PlatformStats } from '@/lib/dataService';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function LandingPage() {
+  const { t, categoryName } = useLanguage();
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,24 +67,23 @@ export function LandingPage() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-emerald opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-neon-emerald" />
                 </span>
-                Live Cooperative Network
+                {t('landing.liveNetwork')}
               </Badge>
               <h1 className="text-5xl font-bold leading-tight tracking-tight sm:text-6xl lg:text-7xl">
-                Find skilled <span className="gradient-text-emerald-cyan">gig workers</span> in seconds
+                {t('landing.heroTitleBefore')} <span className="gradient-text-emerald-cyan">{t('landing.heroTitleHighlight')}</span> {t('landing.heroTitleAfter')}
               </h1>
               <p className="mt-6 max-w-lg text-lg text-gray-400">
-                CoLabour connects you with verified local professionals for instant bookings,
-                transparent pricing, and seamless UPI payments. No middlemen, no hassle.
+                {t('landing.heroDescription')}
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link to="/workers">
                   <NeonButton size="lg" variant="emerald">
-                    Browse Workers <ArrowRight size={18} />
+                    {t('landing.browseWorkers')} <ArrowRight size={18} />
                   </NeonButton>
                 </Link>
                 <Link to="/signup">
                   <NeonButton size="lg" variant="cyan">
-                    Become a Worker
+                    {t('landing.becomeWorker')}
                   </NeonButton>
                 </Link>
               </div>
@@ -91,15 +92,15 @@ export function LandingPage() {
               <div className="mt-10 flex flex-wrap gap-6">
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <ShieldCheck size={18} className="text-neon-emerald" />
-                  <span>Verified Pros</span>
+                  <span>{t('landing.verifiedPros')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <Wallet size={18} className="text-neon-cyan" />
-                  <span>UPI Payments</span>
+                  <span>{t('landing.upiPayments')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <Clock size={18} className="text-neon-cyan" />
-                  <span>Instant Booking</span>
+                  <span>{t('landing.instantBooking')}</span>
                 </div>
               </div>
             </div>
@@ -129,10 +130,10 @@ export function LandingPage() {
               </>
             ) : (
               <>
-                <StatCard icon={Users} value={stats?.active_workers ?? 9} suffix="+" label="Active Workers" />
-                <StatCard icon={Briefcase} value={stats?.jobs_completed ?? 1428} suffix="+" label="Jobs Completed" />
-                <StatCard icon={Star} value={stats?.average_rating ?? 4.9} suffix="/5" label="Avg Rating" />
-                <StatCard icon={TrendingUp} value={stats?.on_time_rate ?? 98.4} suffix="%" label="On-time Rate" />
+                <StatCard icon={Users} value={stats?.active_workers ?? 9} suffix="+" label={t('landing.activeWorkers')} />
+                <StatCard icon={Briefcase} value={stats?.jobs_completed ?? 1428} suffix="+" label={t('landing.jobsCompleted')} />
+                <StatCard icon={Star} value={stats?.average_rating ?? 4.9} suffix="/5" label={t('landing.averageRating')} />
+                <StatCard icon={TrendingUp} value={stats?.on_time_rate ?? 98.4} suffix="%" label={t('landing.onTimeRate')} />
               </>
             )}
           </div>
@@ -142,23 +143,24 @@ export function LandingPage() {
       {/* Categories */}
       <section className="relative">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <SectionTitle subtitle="Browse by service category and find the right professional for your needs">
-            Explore Categories
+          <SectionTitle subtitle={t('landing.categoriesSubtitle')}>
+            {t('landing.categoriesTitle')}
           </SectionTitle>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3">
             {CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICONS[cat] ?? Zap;
               const style = getCategoryStyle(cat);
+              const translatedCategory = categoryName(cat);
               return (
                 <Link key={cat} to={`/workers?category=${encodeURIComponent(cat)}`}>
                   <GlassCard hover className="group p-6 h-full">
                     <div className={`mb-4 inline-flex rounded-2xl border p-3 ${style.bg} ${style.border} ${style.glow} transition-transform group-hover:scale-110`}>
                       <Icon className={style.text} size={28} />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-200 group-hover:text-white transition-colors">{cat}</h3>
-                    <p className="mt-1 text-sm text-gray-500">Book a verified {cat.toLowerCase()}</p>
+                    <h3 className="text-lg font-semibold text-gray-200 group-hover:text-white transition-colors">{translatedCategory}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{t('landing.categoryBook', { category: translatedCategory })}</p>
                     <div className="mt-4 flex items-center gap-1 text-sm text-neon-emerald opacity-0 transition-opacity group-hover:opacity-100">
-                      Explore <ArrowRight size={14} />
+                      {t('landing.explore')} <ArrowRight size={14} />
                     </div>
                   </GlassCard>
                 </Link>
@@ -171,27 +173,27 @@ export function LandingPage() {
       {/* How it works */}
       <section className="relative">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <SectionTitle subtitle="Three simple steps from booking to payment">
-            How It Works
+          <SectionTitle subtitle={t('landing.howItWorksSubtitle')}>
+            {t('landing.howItWorksTitle')}
           </SectionTitle>
           <div className="grid gap-8 md:grid-cols-3">
             <StepCard
               num="01"
               icon={Users}
-              title="Find Your Worker"
-              desc="Browse verified professionals by category, location, and rating. Compare rates and skills."
+              title={t('landing.findWorkerTitle')}
+              desc={t('landing.findWorkerDescription')}
             />
             <StepCard
               num="02"
               icon={Clock}
-              title="Book Instantly"
-              desc="Pick a time, set your location, and confirm. Your worker gets the request in real-time."
+              title={t('landing.bookInstantlyTitle')}
+              desc={t('landing.bookInstantlyDescription')}
             />
             <StepCard
               num="03"
               icon={Wallet}
-              title="Pay via UPI"
-              desc="Scan the QR or tap to pay in your UPI app. Confirm with your UTR number. Done."
+              title={t('landing.payViaUpiTitle')}
+              desc={t('landing.payViaUpiDescription')}
             />
           </div>
         </div>
@@ -203,13 +205,13 @@ export function LandingPage() {
           <GlassCard className="relative overflow-hidden p-12 text-center">
             <GlowOrb className="top-0 left-1/2 -translate-x-1/2 h-64 w-64 bg-neon-emerald/20" />
             <div className="relative z-10">
-              <h2 className="text-4xl font-bold gradient-text-emerald-cyan">Ready to get started?</h2>
+              <h2 className="text-4xl font-bold gradient-text-emerald-cyan">{t('landing.ctaTitle')}</h2>
               <p className="mx-auto mt-4 max-w-xl text-gray-400">
-                Join thousands of customers and workers on the CoLabour platform. Sign up free and start booking or earning today.
+                {t('landing.ctaDescription')}
               </p>
               <div className="mt-8 flex justify-center gap-4">
-                <Link to="/signup"><NeonButton size="lg" variant="emerald">Create Account</NeonButton></Link>
-                <Link to="/workers"><NeonButton size="lg" variant="ghost">Browse Workers</NeonButton></Link>
+                <Link to="/signup"><NeonButton size="lg" variant="emerald">{t('landing.createAccount')}</NeonButton></Link>
+                <Link to="/workers"><NeonButton size="lg" variant="ghost">{t('landing.browseWorkers')}</NeonButton></Link>
               </div>
             </div>
           </GlassCard>
@@ -225,7 +227,7 @@ export function LandingPage() {
               <span className="text-xl font-bold gradient-text-emerald-cyan">CoLabour</span>
             </div>
             <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} CoLabour Marketplace. Next-Gen Gig Economy.
+              &copy; {new Date().getFullYear()} {t('landing.footer')}
             </p>
           </div>
         </div>
@@ -291,6 +293,8 @@ function StepCard({
 }
 
 function HeroCard({ className }: { className?: string }) {
+  const { t } = useLanguage();
+
   return (
     <GlassCard className={`p-5 glass-strong border-neon-emerald/30 shadow-[0_0_30px_rgba(16,185,129,0.15)] ${className}`}>
       <div className="flex items-center gap-3">
@@ -299,7 +303,7 @@ function HeroCard({ className }: { className?: string }) {
         </div>
         <div>
           <h4 className="font-semibold text-white">Rajesh Kumar</h4>
-          <p className="text-xs text-gray-400">Master Electrician</p>
+          <p className="text-xs text-gray-400">{t('landing.masterElectrician')}</p>
         </div>
       </div>
       <div className="mt-4 flex items-center justify-between text-xs text-gray-400 border-t border-white/5 pt-3">
@@ -313,15 +317,17 @@ function HeroCard({ className }: { className?: string }) {
 }
 
 function HeroCard2({ className }: { className?: string }) {
+  const { t } = useLanguage();
+
   return (
     <GlassCard className={`p-4 glass-strong border-neon-cyan/30 shadow-[0_0_30px_rgba(6,182,212,0.15)] ${className}`}>
       <div className="flex items-center gap-2">
         <div className="h-2 w-2 rounded-full bg-neon-emerald animate-ping" />
-        <span className="text-xs font-semibold text-neon-emerald">Instant Booking Confirmed</span>
+        <span className="text-xs font-semibold text-neon-emerald">{t('landing.instantBookingConfirmed')}</span>
       </div>
-      <p className="mt-2 text-xs text-gray-300">Deep Cleaning (2BHK)</p>
+      <p className="mt-2 text-xs text-gray-300">{t('landing.deepCleaning')}</p>
       <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
-        <span>Today, 2:00 PM</span>
+        <span>{t('landing.today')}</span>
         <span className="text-neon-cyan font-bold">₹1,400</span>
       </div>
     </GlassCard>
@@ -329,14 +335,16 @@ function HeroCard2({ className }: { className?: string }) {
 }
 
 function HeroCard3({ className }: { className?: string }) {
+  const { t } = useLanguage();
+
   return (
     <GlassCard className={`p-4 glass-strong border-neon-violet/30 shadow-[0_0_30px_rgba(139,92,246,0.15)] ${className}`}>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">UPI Instant Settlement</span>
-        <span className="text-xs text-emerald-400 font-bold">100% Direct</span>
+        <span className="text-xs text-gray-400">{t('landing.upiSettlement')}</span>
+        <span className="text-xs text-emerald-400 font-bold">{t('landing.direct')}</span>
       </div>
       <div className="mt-2 text-sm font-bold text-white flex items-center gap-1">
-        <ShieldCheck size={16} className="text-neon-emerald" /> Zero Platform Fee
+        <ShieldCheck size={16} className="text-neon-emerald" /> {t('landing.zeroPlatformFee')}
       </div>
     </GlassCard>
   );

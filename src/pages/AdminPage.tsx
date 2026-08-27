@@ -11,6 +11,7 @@ import { type WorkerProfile, type Booking, type Payment } from '@/lib/supabase';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
 import { useAuth } from '@/context/AuthContext';
 import { fetchAdminData, toggleWorkerVerification, resolvePaymentDispute } from '@/lib/dataService';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface WorkerWithUser extends WorkerProfile {
   users?: { name: string; email: string } | null;
@@ -18,6 +19,7 @@ interface WorkerWithUser extends WorkerProfile {
 
 export function AdminPage() {
   const { loading: authLoading } = useAuth();
+  const { t, categoryName, locale } = useLanguage();
   const [workers, setWorkers] = useState<WorkerWithUser[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -48,7 +50,7 @@ export function AdminPage() {
       await toggleWorkerVerification(workerId, current);
       await fetchData();
     } catch {
-      alert('Failed to update verification');
+      alert(t('admin.verificationFailed'));
     }
   };
 
@@ -57,7 +59,7 @@ export function AdminPage() {
       await resolvePaymentDispute(paymentId);
       await fetchData();
     } catch {
-      alert('Failed to resolve dispute');
+      alert(t('admin.disputeFailed'));
     }
   };
 
@@ -86,29 +88,29 @@ export function AdminPage() {
             <div className="inline-flex rounded-xl bg-neon-violet/10 border border-neon-violet/30 p-2.5">
               <ShieldCheck size={24} className="text-neon-violet" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Admin Command Center</h1>
+             <h1 className="text-2xl font-bold text-white">{t('admin.title')}</h1>
           </div>
-          <p className="text-sm text-gray-400">Platform-wide monitoring and management</p>
+           <p className="text-sm text-gray-400">{t('admin.subtitle')}</p>
         </div>
 
         {/* Telemetry */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <TelemetryCard icon={DollarSign} label="Total Revenue" value={`₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} color="emerald" />
-          <TelemetryCard icon={Users} label="Total Workers" value={workers.length} color="cyan" />
-          <TelemetryCard icon={Briefcase} label="Active Bookings" value={activeBookings} color="violet" />
-          <TelemetryCard icon={AlertTriangle} label="Open Disputes" value={disputes.length} color="amber" />
+           <TelemetryCard icon={DollarSign} label={t('admin.totalRevenue')} value={`₹${totalRevenue.toLocaleString(locale, { minimumFractionDigits: 2 })}`} color="emerald" />
+           <TelemetryCard icon={Users} label={t('admin.totalWorkers')} value={workers.length} color="cyan" />
+           <TelemetryCard icon={Briefcase} label={t('admin.activeBookings')} value={activeBookings} color="violet" />
+           <TelemetryCard icon={AlertTriangle} label={t('admin.openDisputes')} value={disputes.length} color="amber" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Worker verifications */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <ShieldCheck size={18} className="text-neon-cyan" /> Worker Verifications
-              {pendingVerifications > 0 && <Badge variant="amber">{pendingVerifications} pending</Badge>}
+               <ShieldCheck size={18} className="text-neon-cyan" /> {t('admin.workerVerifications')}
+               {pendingVerifications > 0 && <Badge variant="amber">{t('admin.pending', { count: pendingVerifications })}</Badge>}
             </h2>
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
               {workers.length === 0 ? (
-                <GlassCard className="p-6 text-center text-gray-500">No workers registered</GlassCard>
+                 <GlassCard className="p-6 text-center text-gray-500">{t('admin.noWorkers')}</GlassCard>
               ) : (
                 workers.map((worker) => {
                   const Icon = CATEGORY_ICONS[worker.category] ?? Briefcase;
@@ -121,13 +123,13 @@ export function AdminPage() {
                             <Icon className={style.text} size={20} />
                           </div>
                           <div>
-                            <p className="font-medium text-white text-sm">{worker.users?.name ?? 'Unknown'}</p>
-                            <p className="text-xs text-gray-400">{worker.category} • ₹{worker.hourly_rate}/hr</p>
+                             <p className="font-medium text-white text-sm">{worker.users?.name ?? t('admin.unknown')}</p>
+                             <p className="text-xs text-gray-400">{categoryName(worker.category)} • ₹{worker.hourly_rate}/hr</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={worker.is_verified ? 'emerald' : 'amber'}>
-                            {worker.is_verified ? <><CheckCircle size={12} /> Verified</> : <><Clock size={12} /> Pending</>}
+                             {worker.is_verified ? <><CheckCircle size={12} /> {t('admin.verified')}</> : <><Clock size={12} /> {t('admin.statusPending')}</>}
                           </Badge>
                           <NeonButton size="sm" variant={worker.is_verified ? 'danger' : 'emerald'} onClick={() => handleToggleVerify(worker.id, worker.is_verified)}>
                             {worker.is_verified ? <XCircle size={14} /> : <CheckCircle size={14} />}
@@ -144,25 +146,25 @@ export function AdminPage() {
           {/* Dispute logs */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <AlertTriangle size={18} className="text-amber-400" /> Dispute Logs
+               <AlertTriangle size={18} className="text-amber-400" /> {t('admin.disputeLogs')}
               {disputes.length > 0 && <Badge variant="amber">{disputes.length}</Badge>}
             </h2>
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
               {disputes.length === 0 ? (
-                <GlassCard className="p-6 text-center text-gray-500">No disputes - all clear</GlassCard>
+                 <GlassCard className="p-6 text-center text-gray-500">{t('admin.noDisputes')}</GlassCard>
               ) : (
                 disputes.map((dispute) => (
                   <GlassCard key={dispute.id} className="border-amber-500/20 p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="font-medium text-white text-sm">Payment Dispute</p>
-                        <p className="text-xs text-gray-400">UTR: {dispute.utr_number ?? 'N/A'}</p>
-                        <p className="text-xs text-gray-400">Amount: ₹{Number(dispute.amount).toFixed(2)}</p>
+                         <p className="font-medium text-white text-sm">{t('admin.paymentDispute')}</p>
+                         <p className="text-xs text-gray-400">{t('admin.utr', { utr: dispute.utr_number ?? 'N/A' })}</p>
+                         <p className="text-xs text-gray-400">{t('admin.amount', { amount: Number(dispute.amount).toFixed(2) })}</p>
                       </div>
-                      <Badge variant="amber">Unresolved</Badge>
+                       <Badge variant="amber">{t('admin.unresolved')}</Badge>
                     </div>
                     <NeonButton size="sm" variant="emerald" fullWidth onClick={() => handleResolveDispute(dispute.id)}>
-                      <CheckCircle size={14} /> Resolve & Mark Paid
+                       <CheckCircle size={14} /> {t('admin.resolve')}
                     </NeonButton>
                   </GlassCard>
                 ))
@@ -174,13 +176,13 @@ export function AdminPage() {
         {/* Platform telemetry */}
         <div className="mt-8">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-            <Activity size={18} className="text-neon-emerald" /> Platform Telemetry
+             <Activity size={18} className="text-neon-emerald" /> {t('admin.telemetry')}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <TelemetryCard icon={TrendingUp} label="Total Bookings" value={bookings.length} color="cyan" />
-            <TelemetryCard icon={CheckCircle} label="Completed" value={bookings.filter((b) => b.status === 'paid' || b.status === 'completed').length} color="emerald" />
-            <TelemetryCard icon={Star} label="Verified Workers" value={verifiedWorkers} color="violet" />
-            <TelemetryCard icon={Wallet} label="Total Payments" value={payments.length} color="amber" />
+             <TelemetryCard icon={TrendingUp} label={t('admin.totalBookings')} value={bookings.length} color="cyan" />
+             <TelemetryCard icon={CheckCircle} label={t('admin.completed')} value={bookings.filter((b) => b.status === 'paid' || b.status === 'completed').length} color="emerald" />
+             <TelemetryCard icon={Star} label={t('admin.verifiedWorkers')} value={verifiedWorkers} color="violet" />
+             <TelemetryCard icon={Wallet} label={t('admin.totalPayments')} value={payments.length} color="amber" />
           </div>
         </div>
       </div>

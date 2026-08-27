@@ -14,8 +14,10 @@ import {
   DEFAULT_COORDINATES,
   getUserLiveCoordinates,
 } from '@/lib/geo';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function WorkersDirectoryPage() {
+  const { t, categoryName } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [workers, setWorkers] = useState<WorkerWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,8 +115,8 @@ export function WorkersDirectoryPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 animate-fade-in">
           <div>
-            <h1 className="text-4xl font-bold gradient-text-emerald-cyan">Find Your Worker</h1>
-            <p className="mt-2 text-gray-400">Browse verified professionals across {CATEGORIES.length} categories with live GPS proximity</p>
+            <h1 className="text-4xl font-bold gradient-text-emerald-cyan">{t('directory.title')}</h1>
+            <p className="mt-2 text-gray-400">{t('directory.subtitle', { count: CATEGORIES.length })}</p>
           </div>
 
           <button
@@ -123,7 +125,7 @@ export function WorkersDirectoryPage() {
             className="inline-flex items-center gap-2 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-2.5 text-xs font-bold text-neon-cyan hover:bg-neon-cyan/20 transition-all shadow-[0_0_20px_rgba(6,182,212,0.2)]"
           >
             <Radio size={14} className={gpsActive ? 'animate-pulse' : ''} />
-            <span>{gpsActive ? 'GPS Signal Active' : 'Calibrate Live GPS'}</span>
+            <span>{gpsActive ? t('directory.gpsActive') : t('directory.calibrateGps')}</span>
             <span className="rounded bg-neon-cyan/20 px-1.5 py-0.5 text-[9px] font-mono">
               {userCoords.lat.toFixed(2)}, {userCoords.lng.toFixed(2)}
             </span>
@@ -137,7 +139,7 @@ export function WorkersDirectoryPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, skill, or location..."
+              placeholder={t('directory.searchPlaceholder')}
               className="w-full rounded-xl border border-white/10 bg-base-800/60 py-3 pl-12 pr-4 text-sm text-gray-200 outline-none transition-all focus:border-neon-emerald/40 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
             />
           </div>
@@ -148,10 +150,10 @@ export function WorkersDirectoryPage() {
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="rounded-xl border border-white/10 bg-base-800/60 px-4 py-3 text-sm text-gray-200 outline-none focus:border-neon-emerald/40"
             >
-              <option value="proximity">📍 Nearest Live GPS</option>
-              <option value="rating">Top Rated</option>
-              <option value="rate_low">Lowest Rate</option>
-              <option value="rate_high">Highest Rate</option>
+              <option value="proximity">📍 {t('directory.nearest')}</option>
+              <option value="rating">{t('directory.topRated')}</option>
+              <option value="rate_low">{t('directory.lowestRate')}</option>
+              <option value="rate_high">{t('directory.highestRate')}</option>
             </select>
           </div>
         </div>
@@ -159,7 +161,7 @@ export function WorkersDirectoryPage() {
         {/* Category filters */}
         <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
           <CategoryChip
-            label="All"
+            label={t('directory.all')}
             active={selectedCategory === 'all'}
             onClick={() => handleCategoryChange('all')}
             icon={SlidersHorizontal}
@@ -169,7 +171,7 @@ export function WorkersDirectoryPage() {
             return (
               <CategoryChip
                 key={cat}
-                label={cat}
+                label={categoryName(cat)}
                 active={selectedCategory === cat}
                 onClick={() => handleCategoryChange(cat)}
                 icon={Icon}
@@ -185,12 +187,12 @@ export function WorkersDirectoryPage() {
           </div>
         ) : filtered.length === 0 ? (
           <GlassCard className="p-12 text-center">
-            <p className="text-gray-400">No workers found matching your criteria.</p>
+            <p className="text-gray-400">{t('directory.noWorkers')}</p>
             <button
               onClick={() => { setSearch(''); setSelectedCategory('all'); setSearchParams({}); }}
               className="mt-4 text-sm text-neon-emerald hover:underline"
             >
-              Clear filters
+              {t('directory.clearFilters')}
             </button>
           </GlassCard>
         ) : (
@@ -218,9 +220,9 @@ export function WorkersDirectoryPage() {
                           </div>
                           <div>
                             <h3 className="font-semibold text-white group-hover:text-neon-emeraldGlow transition-colors">
-                              {worker.users?.name ?? 'Worker'}
+                              {worker.users?.name ?? t('directory.workerFallback')}
                             </h3>
-                            <p className="text-xs text-gray-400">{worker.category}</p>
+                            <p className="text-xs text-gray-400">{categoryName(worker.category)}</p>
                           </div>
                         </div>
                         <Badge variant="emerald">₹{worker.hourly_rate}/hr</Badge>
@@ -229,9 +231,9 @@ export function WorkersDirectoryPage() {
                       {/* Live distance pill */}
                       <div className="mt-3 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-full bg-neon-cyan/15 px-2.5 py-0.5 text-[11px] font-bold text-neon-cyan border border-neon-cyan/30">
-                          <Navigation size={11} /> {distanceKm.toFixed(1)} km away
+                          <Navigation size={11} /> {t('directory.kmAway', { distance: distanceKm.toFixed(1) })}
                         </span>
-                        <span className="text-[11px] text-gray-400">~{reachTime} mins reach</span>
+                        <span className="text-[11px] text-gray-400">{t('directory.minsReach', { minutes: reachTime })}</span>
                       </div>
 
                       {worker.bio && (
