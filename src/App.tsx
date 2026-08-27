@@ -20,7 +20,7 @@ function App() {
       <BrowserRouter>
         <GlobalWorkerAlert />
         <CoLabourAIWidget />
-        <div className="min-h-screen bg-base text-gray-100">
+        <div className="min-h-screen bg-[#F4EFE6] text-neutral-900 font-sans">
           <Navbar />
           <Routes>
             <Route path="/" element={<LandingPage />} />

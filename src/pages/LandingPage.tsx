@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, Wrench, Plug, Hammer, Sparkles, ShieldCheck, Star,
   ArrowRight, Users, CheckCircle, Clock, Wallet, MapPin,
-  TrendingUp, RefreshCw, Check, Briefcase
+  TrendingUp, RefreshCw, Check, Briefcase, AlertCircle
 } from 'lucide-react';
 import { CATEGORIES, type WorkerWithUser } from '@/lib/supabase';
 import { CATEGORY_ICONS } from '@/lib/categories';
@@ -24,6 +24,19 @@ const CATEGORY_DETAILS: Record<string, { subtitle: string; badge: string; badgeC
   Caregiver: { subtitle: 'Elderly Assistance, Home Care', badge: '★ Top Rated', badgeColor: 'bg-[#FED7AA] text-[#C2410C]', bg: 'bg-[#FFE4E6]', text: 'text-[#BE123C]' },
 };
 
+// Animation Variants for Page, Containers, and Worker Cards
+const pageVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -36,7 +49,7 @@ const containerVariants = {
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.97 },
+  hidden: { opacity: 0, y: 24, scale: 0.96 },
   visible: {
     opacity: 1,
     y: 0,
@@ -55,50 +68,43 @@ export function LandingPage() {
   const [workers, setWorkers] = useState<WorkerWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingWorkers, setLoadingWorkers] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setLoadingWorkers(true);
+    setError(null);
 
-    async function loadData() {
-      setLoading(true);
-      setLoadingWorkers(true);
-
-      // Load platform statistics
-      try {
-        const statsData = await fetchPlatformStats();
-        if (mounted) setStats(statsData);
-      } catch {
-        if (mounted) {
-          setStats({
-            active_workers: 18,
-            jobs_completed: 1428,
-            average_rating: 4.9,
-            on_time_rate: 98.4,
-          });
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-
-      // Load real verified workers showcase
-      try {
-        const workersData = await fetchWorkersList('all');
-        if (mounted) {
-          setWorkers(workersData.slice(0, 8)); // Display up to 8 top workers
-        }
-      } catch {
-        if (mounted) setWorkers([]);
-      } finally {
-        if (mounted) setLoadingWorkers(false);
-      }
+    // Load platform statistics
+    try {
+      const statsData = await fetchPlatformStats();
+      setStats(statsData);
+    } catch {
+      setStats({
+        active_workers: 18,
+        jobs_completed: 1428,
+        average_rating: 4.9,
+        on_time_rate: 98.4,
+      });
+    } finally {
+      setLoading(false);
     }
 
-    loadData();
-
-    return () => {
-      mounted = false;
-    };
+    // Load real verified workers showcase
+    try {
+      const workersData = await fetchWorkersList('all');
+      setWorkers(workersData.slice(0, 8)); // Display up to 8 top workers
+    } catch (err: any) {
+      setError(err?.message || 'Unable to connect to live worker directory.');
+      setWorkers([]);
+    } finally {
+      setLoadingWorkers(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const dashboardLink = user?.role === 'worker' ? '/worker/dashboard' : user?.role === 'admin' ? '/admin' : '/customer/dashboard';
 
@@ -106,14 +112,14 @@ export function LandingPage() {
     <div className="min-h-screen bg-[#F59E0B] p-2 sm:p-5 lg:p-8 font-sans selection:bg-[#18181B] selection:text-[#F59E0B]">
       {/* Outer Golden/Amber Frame wrapping the Cream Neubrutalist Canvas */}
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        variants={pageVariants}
+        initial="hidden"
+        animate="visible"
         className="mx-auto max-w-7xl rounded-3xl sm:rounded-[32px] border-2 sm:border-[3px] border-black bg-[#FAF7F2] p-4 sm:p-8 lg:p-10 shadow-[8px_8px_0px_#000000] text-neutral-900 overflow-hidden"
       >
 
         {/* ========================================================================= */}
-        {/* 1. TOP RETRO NAVIGATION BAR (Inside Canvas) */}
+        {/* 1. TOP RETRO HERO HEADER (Inside Canvas) */}
         {/* ========================================================================= */}
         <header className="flex flex-wrap items-center justify-between gap-4 border-2 border-black bg-white rounded-2xl p-3 sm:p-4 shadow-[4px_4px_0px_#000000] mb-10">
           {/* Logo Pill */}
@@ -147,7 +153,7 @@ export function LandingPage() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   type="button"
-                  className="rounded-xl border-2 border-black bg-[#A3C9A8] px-4 py-2 text-xs font-black uppercase text-black shadow-[2px_2px_0px_#000000] flex items-center gap-1.5"
+                  className="rounded-xl border-2 border-black bg-[#A3C9A8] px-4 py-2 text-xs font-black uppercase text-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <Briefcase size={14} className="stroke-[2.5]" />
                   <span>Dashboard</span>
@@ -160,7 +166,7 @@ export function LandingPage() {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     type="button"
-                    className="rounded-xl border-2 border-black bg-[#FDE68A] hover:bg-[#FCD34D] px-4 py-2 text-xs sm:text-sm font-black uppercase text-black shadow-[2px_2px_0px_#000000] transition-all cursor-pointer"
+                    className="rounded-xl border-2 border-black bg-[#FDE68A] hover:bg-[#FCD34D] px-4 py-2 text-xs sm:text-sm font-black uppercase text-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                   >
                     Sign In
                   </motion.button>
@@ -170,7 +176,7 @@ export function LandingPage() {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     type="button"
-                    className="rounded-xl border-2 border-black bg-[#F59E0B] hover:bg-[#E68A00] px-4 py-2 text-xs sm:text-sm font-black uppercase text-black shadow-[2px_2px_0px_#000000] transition-all cursor-pointer"
+                    className="rounded-xl border-2 border-black bg-[#F59E0B] hover:bg-[#E68A00] px-4 py-2 text-xs sm:text-sm font-black uppercase text-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                   >
                     Get Started
                   </motion.button>
@@ -188,18 +194,33 @@ export function LandingPage() {
             
             {/* Left Content Column */}
             <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 rounded-lg border-2 border-black bg-[#D4E7D0] px-3 py-1 text-xs font-black uppercase text-black shadow-[2px_2px_0px_#000000] mb-4">
+              <motion.div
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+                className="inline-flex items-center gap-2 rounded-lg border-2 border-black bg-[#D4E7D0] px-3 py-1 text-xs font-black uppercase text-black shadow-[2px_2px_0px_#000000] mb-4"
+              >
                 <span className="h-2 w-2 rounded-full bg-[#15803D] animate-ping" />
                 Verified Cooperative Network
-              </div>
+              </motion.div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-950 uppercase tracking-tight leading-[1.05] mb-5">
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.08 }}
+                className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-950 uppercase tracking-tight leading-[1.05] mb-5"
+              >
                 Trusted Local Hands For Any Job.
-              </h1>
+              </motion.h1>
 
-              <p className="text-base sm:text-lg font-medium text-neutral-700 max-w-xl leading-relaxed mb-8">
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.14 }}
+                className="text-base sm:text-lg font-medium text-neutral-700 max-w-xl leading-relaxed mb-8"
+              >
                 Connecting you with skilled plumbers, electricians, cleaners, and carpenters in your community. Direct UPI payments with 0% platform commission.
-              </p>
+              </motion.p>
 
               {/* CTAs */}
               <div className="flex flex-wrap items-center gap-3.5 mb-8">
@@ -244,7 +265,7 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Right Graphic Column: 3D Stacked Neubrutalist Sticker Cards (Inspired by Screenshot) */}
+            {/* Right Graphic Column: 3D Stacked Neubrutalist Sticker Cards */}
             <div className="lg:col-span-5 relative flex items-center justify-center pt-6 lg:pt-0">
               <div className="relative w-full max-w-[340px] sm:max-w-[380px] h-[340px] sm:h-[380px]">
                 
@@ -354,7 +375,7 @@ export function LandingPage() {
               return (
                 <Link key={cat} to={`/workers?category=${encodeURIComponent(cat)}`}>
                   <motion.div
-                    whileHover={{ y: -4, transition: { duration: 0.15 } }}
+                    whileHover={{ y: -6, transition: { duration: 0.15 } }}
                     className="group relative rounded-2xl sm:rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_#000000] hover:shadow-[7px_7px_0px_#000000] transition-all flex flex-col justify-between h-full cursor-pointer overflow-hidden"
                   >
                     {/* Top sticker badge */}
@@ -416,8 +437,8 @@ export function LandingPage() {
             </Link>
           </div>
 
+          {/* State 1: Smooth Loading Skeleton Shimmer */}
           {loadingWorkers ? (
-            /* Neubrutalist Skeleton Loading Grid */
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
               {[1, 2, 3, 4].map((i) => (
                 <div
@@ -435,16 +456,39 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
+          ) : error ? (
+            /* State 2: Smooth Error State with Retry Button */
+            <div className="rounded-3xl border-2 sm:border-[2.5px] border-black bg-[#FFFBEB] p-8 text-center shadow-[6px_6px_0px_#000000]">
+              <AlertCircle className="text-[#C2410C] mx-auto mb-3" size={36} />
+              <h3 className="text-base font-black uppercase text-neutral-900">Worker Directory Notice</h3>
+              <p className="text-xs font-medium text-neutral-600 my-2">{error}</p>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                onClick={loadData}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl border-2 border-black bg-[#F59E0B] px-4 py-2 text-xs font-black uppercase text-black shadow-[2px_2px_0px_#000000] cursor-pointer"
+              >
+                <RefreshCw size={13} />
+                <span>Retry Loading</span>
+              </motion.button>
+            </div>
           ) : workers.length === 0 ? (
-            /* Empty State */
-            <div className="rounded-2xl border-2 border-black bg-white p-8 text-center shadow-[4px_4px_0px_#000000]">
-              <p className="text-sm font-bold text-neutral-600">No workers available at this moment.</p>
-              <Link to="/signup" className="mt-3 inline-block font-black text-xs uppercase underline">
-                Become the first verified worker
+            /* State 3: Smooth Empty State */
+            <div className="rounded-3xl border-2 sm:border-[2.5px] border-black bg-white p-8 text-center shadow-[6px_6px_0px_#000000]">
+              <p className="text-sm font-black text-neutral-800 uppercase mb-1">No Active Workers Listed</p>
+              <p className="text-xs font-medium text-neutral-500 mb-4">Be the first verified professional in your neighborhood.</p>
+              <Link to="/signup">
+                <button
+                  type="button"
+                  className="rounded-xl border-2 border-black bg-[#F59E0B] px-5 py-2 text-xs font-black uppercase text-black shadow-[2px_2px_0px_#000000] cursor-pointer"
+                >
+                  Join as a Pro
+                </button>
               </Link>
             </div>
           ) : (
-            /* Real Staggered Worker Showcase Grid */
+            /* State 4: Real Staggered Worker Showcase Grid */
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -460,7 +504,7 @@ export function LandingPage() {
                   <motion.div
                     key={worker.id}
                     variants={cardVariants}
-                    whileHover={{ y: -4, transition: { duration: 0.15 } }}
+                    whileHover={{ y: -6, transition: { duration: 0.15 } }}
                     className="group relative rounded-2xl sm:rounded-3xl border-2 border-black bg-white p-4 sm:p-5 shadow-[4px_4px_0px_#000000] hover:shadow-[7px_7px_0px_#000000] transition-all flex flex-col justify-between"
                   >
                     <div>
@@ -536,7 +580,7 @@ export function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
             {/* Step 1 */}
             <motion.div
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -6 }}
               className="relative rounded-3xl border-2 border-black bg-[#FFFBEB] p-6 shadow-[5px_5px_0px_#000000] flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-4">
@@ -557,7 +601,7 @@ export function LandingPage() {
 
             {/* Step 2 */}
             <motion.div
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -6 }}
               className="relative rounded-3xl border-2 border-black bg-[#F0FDF4] p-6 shadow-[5px_5px_0px_#000000] flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-4">
@@ -578,7 +622,7 @@ export function LandingPage() {
 
             {/* Step 3 */}
             <motion.div
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -6 }}
               className="relative rounded-3xl border-2 border-black bg-[#EFF6FF] p-6 shadow-[5px_5px_0px_#000000] flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-4">
@@ -698,4 +742,5 @@ export function LandingPage() {
     </div>
   );
 }
+
 
