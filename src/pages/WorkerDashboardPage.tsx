@@ -1,5 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Wallet, Clock, CheckCircle, XCircle, Bell, Briefcase, Star,
   Check, Loader2, MapPin, Calendar, AlertCircle, Settings, ShieldCheck,
@@ -8,12 +6,13 @@ import {
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
-import { GlowOrb, AnimatedCounter } from '@/components/ui/Shared';
-import { type Booking, type Payment } from '@/lib/supabase';
+import { GlowOrb } from '@/components/ui/Shared';
+import { StatCard } from '@/components/ui/StatCard';
+import { Toast } from '@/components/ui/Toast';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
-import { useAuth } from '@/context/AuthContext';
-import { fetchWorkerDashboardData, updateBookingStatus, confirmPaymentAsReceived } from '@/lib/dataService';
+import { useWorkerDashboard } from '@/hooks/useWorkerDashboard';
 import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
+import type { Booking, Payment } from '@/lib/supabase';
 
 interface BookingWithCustomer extends Booking {
   customer?: { name: string; phone: string } | null;
@@ -24,119 +23,15 @@ interface PaymentWithBooking extends Payment {
 }
 
 export function WorkerDashboardPage() {
-  const { user, workerProfile, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [bookings, setBookings] = useState<BookingWithCustomer[]>([]);
-  const [payments, setPayments] = useState<PaymentWithBooking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [selectedSlip, setSelectedSlip] = useState<{ booking: BookingWithCustomer; payment?: PaymentWithBooking } | null>(null);
-  const [upiId, setUpiId] = useState('');
-  const [hourlyRate, setHourlyRate] = useState('');
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [settingsMsg, setSettingsMsg] = useState('');
-
-  const fetchData = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await fetchWorkerDashboardData(user.id);
-      setBookings(data.bookings as BookingWithCustomer[]);
-      setPayments(data.payments as PaymentWithBooking[]);
-    } catch {
-      // fallback
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (workerProfile) {
-      setUpiId(workerProfile.upi_id);
-      setHourlyRate(String(workerProfile.hourly_rate));
-      fetchData();
-    } else {
-      setLoading(false);
-    }
-  }, [workerProfile, authLoading, fetchData]);
-
-  // Poll for new bookings/payments every 3 seconds for instant synchronization
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
-  }, [user, fetchData]);
-
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
-  };
-
-  const handleConfirmPayment = async (paymentId: string) => {
-    setConfirmingId(paymentId);
-    // Optimistic payment status update
-    setPayments((prev) =>
-      prev.map((p) => (p.id === paymentId ? { ...p, status: 'paid', paid_at: new Date().toISOString() } : p))
-    );
-    showToast('Payment confirmed as received!');
-    try {
-      await confirmPaymentAsReceived(paymentId);
-      await fetchData();
-    } catch {
-      alert('Failed to confirm payment');
-      await fetchData();
-    } finally {
-      setConfirmingId(null);
-    }
-  };
-
-  const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
-    // Optimistic UI updates
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status } : b))
-    );
-
-    if (status === 'confirmed') {
-      showToast('🎉 Job Accepted successfully! Customer notified to pay via UPI.');
-    } else if (status === 'cancelled') {
-      showToast('Job Declined and removed from active queue.');
-    } else if (status === 'completed' || status === 'paid') {
-      showToast('Job marked as Completed.');
-    }
-
-    try {
-      await updateBookingStatus(bookingId, status);
-      await fetchData();
-    } catch {
-      alert('Failed to update booking status');
-      await fetchData();
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    if (!workerProfile) return;
-    setSavingSettings(true);
-    setSettingsMsg('');
-    try {
-      workerProfile.upi_id = upiId;
-      workerProfile.hourly_rate = parseFloat(hourlyRate) || workerProfile.hourly_rate;
-      setSettingsMsg('Settings saved successfully');
-      setTimeout(() => setShowSettings(false), 1200);
-    } catch {
-      setSettingsMsg('Failed to save settings');
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
-  const totalEarnings = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amount), 0);
-  const pendingPayments = payments.filter((p) => p.status === 'payment_submitted');
-  // Active bookings includes pending and confirmed
-  const activeBookings = bookings.filter((b) => ['pending', 'confirmed', 'in_progress'].includes(b.status));
-  const completedJobs = bookings.filter((b) => b.status === 'paid' || b.status === 'completed');
+  const {
+    user, workerProfile, authLoading, loading, navigate,
+    confirmingId, showSettings, setShowSettings,
+    selectedSlip, setSelectedSlip,
+    upiId, setUpiId, hourlyRate, setHourlyRate,
+    savingSettings, settingsMsg, toastMsg,
+    totalEarnings, pendingPayments, activeBookings, completedJobs,
+    handleConfirmPayment, handleUpdateBookingStatus, handleSaveSettings,
+  } = useWorkerDashboard();
 
   if (authLoading || loading) {
     return (
@@ -164,13 +59,7 @@ export function WorkerDashboardPage() {
       <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
       <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
 
-      {/* Floating Toast Notification */}
-      {toastMsg && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-2 rounded-2xl border border-neon-emerald/40 bg-base-900/90 px-4 py-3 text-sm font-semibold text-neon-emerald shadow-[0_0_30px_rgba(16,185,129,0.3)] backdrop-blur-xl animate-slide-down">
-          <CheckCircle size={18} className="text-neon-emerald" />
-          <span>{toastMsg}</span>
-        </div>
-      )}
+      <Toast message={toastMsg} />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -263,28 +152,24 @@ export function WorkerDashboardPage() {
               {completedJobs.length === 0 ? (
                 <GlassCard className="p-4 text-center text-sm text-gray-500">No completed jobs yet</GlassCard>
               ) : (
-                completedJobs.slice(0, 5).map((job) => {
-                  const jobPayment = payments.find((p) => p.booking_id === job.id);
-                  return (
+                completedJobs.slice(0, 5).map((job) => (
                     <GlassCard key={job.id} className="p-4 flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-white text-sm">{job.customer?.name ?? 'Customer Booking'}</p>
                         <p className="text-xs text-gray-400">
                           {job.category} • ₹{Number(job.total_amount).toFixed(2)}
-                          {jobPayment?.utr_number && <span className="font-mono text-neon-cyan ml-2">UTR: {jobPayment.utr_number}</span>}
                         </p>
                       </div>
                       <NeonButton
                         size="sm"
                         variant="ghost"
-                        onClick={() => setSelectedSlip({ booking: job, payment: jobPayment })}
+                        onClick={() => setSelectedSlip({ booking: job })}
                         className="text-xs"
                       >
                         <Eye size={14} /> View CoLabour Slip
                       </NeonButton>
                     </GlassCard>
-                  );
-                })
+                ))
               )}
             </div>
           </div>
@@ -347,24 +232,6 @@ export function WorkerDashboardPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; label: string; value: string | number; color: string }) {
-  const colors: Record<string, string> = {
-    emerald: 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/30',
-    cyan: 'text-neon-cyan bg-neon-cyan/10 border-neon-cyan/30',
-    violet: 'text-neon-violet bg-neon-violet/10 border-neon-violet/30',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-  };
-  return (
-    <GlassCard className="p-5">
-      <div className={`mb-3 inline-flex rounded-xl border p-2.5 ${colors[color]}`}>
-        <Icon size={20} />
-      </div>
-      <p className="text-2xl font-bold text-white">{typeof value === 'number' ? <AnimatedCounter value={value} /> : value}</p>
-      <p className="text-xs text-gray-500 mt-1">{label}</p>
-    </GlassCard>
   );
 }
 

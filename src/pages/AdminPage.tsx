@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
 import {
   Users, ShieldCheck, Briefcase, Wallet, TrendingUp, Loader2, CheckCircle, XCircle,
   Star, AlertTriangle, Activity, DollarSign, Clock,
@@ -6,65 +5,17 @@ import {
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
-import { GlowOrb, AnimatedCounter } from '@/components/ui/Shared';
-import { type WorkerProfile, type Booking, type Payment } from '@/lib/supabase';
+import { GlowOrb } from '@/components/ui/Shared';
+import { StatCard } from '@/components/ui/StatCard';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
-import { useAuth } from '@/context/AuthContext';
-import { fetchAdminData, toggleWorkerVerification, resolvePaymentDispute } from '@/lib/dataService';
-
-interface WorkerWithUser extends WorkerProfile {
-  users?: { name: string; email: string } | null;
-}
+import { useAdminPage } from '@/hooks/useAdminPage';
 
 export function AdminPage() {
-  const { loading: authLoading } = useAuth();
-  const [workers, setWorkers] = useState<WorkerWithUser[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [disputes, setDisputes] = useState<Payment[]>([]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const data = await fetchAdminData();
-      setWorkers(data.workers as unknown as WorkerWithUser[]);
-      setBookings(data.bookings);
-      setPayments(data.payments);
-      setDisputes(data.payments.filter((p) => p.status === 'payment_submitted'));
-    } catch {
-      // fallback
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (authLoading) return;
-    fetchData();
-  }, [authLoading, fetchData]);
-
-  const handleToggleVerify = async (workerId: string, current: boolean) => {
-    try {
-      await toggleWorkerVerification(workerId, current);
-      await fetchData();
-    } catch {
-      alert('Failed to update verification');
-    }
-  };
-
-  const handleResolveDispute = async (paymentId: string) => {
-    try {
-      await resolvePaymentDispute(paymentId);
-      await fetchData();
-    } catch {
-      alert('Failed to resolve dispute');
-    }
-  };
-
-  const totalRevenue = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amount), 0);
-  const verifiedWorkers = workers.filter((w) => w.is_verified).length;
-  const pendingVerifications = workers.filter((w) => !w.is_verified).length;
-  const activeBookings = bookings.filter((b) => ['pending', 'confirmed', 'in_progress', 'payment_submitted'].includes(b.status)).length;
+  const {
+    authLoading, loading, workers, bookings, payments, disputes,
+    totalRevenue, verifiedWorkers, pendingVerifications, activeBookings,
+    handleToggleVerify, handleResolveDispute,
+  } = useAdminPage();
 
   if (authLoading || loading) {
     return (
@@ -93,10 +44,10 @@ export function AdminPage() {
 
         {/* Telemetry */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <TelemetryCard icon={DollarSign} label="Total Revenue" value={`₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} color="emerald" />
-          <TelemetryCard icon={Users} label="Total Workers" value={workers.length} color="cyan" />
-          <TelemetryCard icon={Briefcase} label="Active Bookings" value={activeBookings} color="violet" />
-          <TelemetryCard icon={AlertTriangle} label="Open Disputes" value={disputes.length} color="amber" />
+          <StatCard icon={DollarSign} label="Total Revenue" value={`₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} color="emerald" />
+          <StatCard icon={Users} label="Total Workers" value={workers.length} color="cyan" />
+          <StatCard icon={Briefcase} label="Active Bookings" value={activeBookings} color="violet" />
+          <StatCard icon={AlertTriangle} label="Open Disputes" value={disputes.length} color="amber" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -177,31 +128,13 @@ export function AdminPage() {
             <Activity size={18} className="text-neon-emerald" /> Platform Telemetry
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <TelemetryCard icon={TrendingUp} label="Total Bookings" value={bookings.length} color="cyan" />
-            <TelemetryCard icon={CheckCircle} label="Completed" value={bookings.filter((b) => b.status === 'paid' || b.status === 'completed').length} color="emerald" />
-            <TelemetryCard icon={Star} label="Verified Workers" value={verifiedWorkers} color="violet" />
-            <TelemetryCard icon={Wallet} label="Total Payments" value={payments.length} color="amber" />
+            <StatCard icon={TrendingUp} label="Total Bookings" value={bookings.length} color="cyan" />
+            <StatCard icon={CheckCircle} label="Completed" value={bookings.filter((b) => b.status === 'paid' || b.status === 'completed').length} color="emerald" />
+            <StatCard icon={Star} label="Verified Workers" value={verifiedWorkers} color="violet" />
+            <StatCard icon={Wallet} label="Total Payments" value={payments.length} color="amber" />
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function TelemetryCard({ icon: Icon, label, value, color }: { icon: typeof Users; label: string; value: string | number; color: string }) {
-  const colors: Record<string, string> = {
-    emerald: 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/30',
-    cyan: 'text-neon-cyan bg-neon-cyan/10 border-neon-cyan/30',
-    violet: 'text-neon-violet bg-neon-violet/10 border-neon-violet/30',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-  };
-  return (
-    <GlassCard className="p-5">
-      <div className={`mb-3 inline-flex rounded-xl border p-2.5 ${colors[color]}`}>
-        <Icon size={20} />
-      </div>
-      <p className="text-2xl font-bold text-white">{typeof value === 'number' ? <AnimatedCounter value={value} /> : value}</p>
-      <p className="text-xs text-gray-500 mt-1">{label}</p>
-    </GlassCard>
   );
 }

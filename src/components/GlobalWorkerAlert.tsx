@@ -1,137 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Bell, CheckCircle2, XCircle, MapPin, Calendar, Wallet,
   Loader2, X
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import {
-  fetchWorkerDashboardData,
-  updateBookingStatus,
-  confirmPaymentAsReceived,
-  rejectPaymentDispute
-} from '@/lib/dataService';
-import { type Booking, type Payment } from '@/lib/supabase';
 import { NeonButton } from '@/components/ui/NeonButton';
-
-interface PendingBookingItem extends Booking {
-  customer?: { name: string; phone: string } | null;
-}
-
-interface PaymentItem extends Payment {
-  bookings?: { customer_id: string; address: string; category?: string } | null;
-}
+import { useGlobalWorkerAlert } from '@/hooks/useGlobalWorkerAlert';
 
 export function GlobalWorkerAlert() {
-  const { user } = useAuth();
-  const [incomingJob, setIncomingJob] = useState<PendingBookingItem | null>(null);
-  const [paymentAlert, setPaymentAlert] = useState<PaymentItem | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [dismissedJobs, setDismissedJobs] = useState<Set<string>>(new Set());
-  const [dismissedPayments, setDismissedPayments] = useState<Set<string>>(new Set());
+  const {
+    shouldShow, incomingJob, paymentAlert, processing,
+    handleAcceptJob, handleDeclineJob, handleConfirmPayment, handleRejectPayment,
+    dismissJob, dismissPayment,
+  } = useGlobalWorkerAlert();
 
-  const checkAlerts = useCallback(async () => {
-    if (!user || user.role !== 'worker') return;
-
-    try {
-      const data = await fetchWorkerDashboardData(user.id);
-      
-      // 1. Check for pending booking requests
-      const pendingJobs = (data.bookings || []).filter(
-        (b) => b.status === 'pending' && !dismissedJobs.has(b.id)
-      ) as PendingBookingItem[];
-
-      if (pendingJobs.length > 0) {
-        setIncomingJob(pendingJobs[0]);
-      } else {
-        setIncomingJob(null);
-      }
-
-      // 2. Check for payment_submitted alerts
-      const pendingPayments = (data.payments || []).filter(
-        (p) => p.status === 'payment_submitted' && !dismissedPayments.has(p.id)
-      ) as PaymentItem[];
-
-      if (pendingPayments.length > 0) {
-        setPaymentAlert(pendingPayments[0]);
-      } else {
-        setPaymentAlert(null);
-      }
-    } catch {
-      // ignore
-    }
-  }, [user, dismissedJobs, dismissedPayments]);
-
-  useEffect(() => {
-    if (!user || user.role !== 'worker') return;
-    checkAlerts();
-    const interval = setInterval(checkAlerts, 2500);
-    return () => clearInterval(interval);
-  }, [user, checkAlerts]);
-
-  // Actions for Incoming Job
-  const handleAcceptJob = async () => {
-    if (!incomingJob) return;
-    setProcessing(true);
-    try {
-      await updateBookingStatus(incomingJob.id, 'confirmed');
-      setDismissedJobs((prev) => new Set(prev).add(incomingJob.id));
-      setIncomingJob(null);
-      await checkAlerts();
-    } catch {
-      alert('Failed to accept booking');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleDeclineJob = async () => {
-    if (!incomingJob) return;
-    setProcessing(true);
-    try {
-      await updateBookingStatus(incomingJob.id, 'cancelled');
-      setDismissedJobs((prev) => new Set(prev).add(incomingJob.id));
-      setIncomingJob(null);
-      await checkAlerts();
-    } catch {
-      alert('Failed to decline booking');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // Actions for Payment Confirmation
-  const handleConfirmPayment = async () => {
-    if (!paymentAlert) return;
-    setProcessing(true);
-    try {
-      await confirmPaymentAsReceived(paymentAlert.id);
-      setDismissedPayments((prev) => new Set(prev).add(paymentAlert.id));
-      setPaymentAlert(null);
-      await checkAlerts();
-    } catch {
-      alert('Failed to confirm payment');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleRejectPayment = async () => {
-    if (!paymentAlert) return;
-    setProcessing(true);
-    try {
-      await rejectPaymentDispute(paymentAlert.id);
-      setDismissedPayments((prev) => new Set(prev).add(paymentAlert.id));
-      setPaymentAlert(null);
-      await checkAlerts();
-    } catch {
-      alert('Failed to reject payment');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  if (!user || user.role !== 'worker') return null;
+  if (!shouldShow) return null;
 
   return (
     <AnimatePresence>
@@ -164,10 +46,7 @@ export function GlobalWorkerAlert() {
                 </span>
               </div>
               <button
-                onClick={() => {
-                  setDismissedJobs((prev) => new Set(prev).add(incomingJob.id));
-                  setIncomingJob(null);
-                }}
+                onClick={dismissJob}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <X size={18} />
@@ -265,10 +144,7 @@ export function GlobalWorkerAlert() {
                 </span>
               </div>
               <button
-                onClick={() => {
-                  setDismissedPayments((prev) => new Set(prev).add(paymentAlert.id));
-                  setPaymentAlert(null);
-                }}
+                onClick={dismissPayment}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <X size={18} />

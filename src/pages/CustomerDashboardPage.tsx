@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar, MapPin, Wallet, Clock, Loader2, ArrowRight, Briefcase, CheckCircle,
@@ -7,58 +6,23 @@ import {
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { Badge } from '@/components/ui/Badge';
-import { GlowOrb, AnimatedCounter } from '@/components/ui/Shared';
-import { type Booking, type Payment } from '@/lib/supabase';
+import { GlowOrb } from '@/components/ui/Shared';
+import { StatCard } from '@/components/ui/StatCard';
 import { CATEGORY_ICONS, getCategoryStyle } from '@/lib/categories';
-import { useAuth } from '@/context/AuthContext';
-import { fetchCustomerDashboardData } from '@/lib/dataService';
+import { useCustomerDashboard } from '@/hooks/useCustomerDashboard';
 import { CoLabourPrinterEngine } from '@/components/CoLabourPrinterEngine';
+import type { Booking } from '@/lib/supabase';
 
 interface BookingWithWorker extends Booking {
   worker?: { id: string; category: string; hourly_rate: number; users?: { name: string } | null } | null;
 }
 
-interface PaymentWithBooking extends Payment {
-  bookings?: { id: string; category: string } | null;
-}
-
 export function CustomerDashboardPage() {
-  const { user, loading: authLoading } = useAuth();
-  const [bookings, setBookings] = useState<BookingWithWorker[]>([]);
-  const [payments, setPayments] = useState<PaymentWithBooking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedSlip, setSelectedSlip] = useState<{ booking: BookingWithWorker; payment?: PaymentWithBooking } | null>(null);
-
-  const fetchData = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await fetchCustomerDashboardData(user.id);
-      setBookings(data.bookings as BookingWithWorker[]);
-      setPayments(data.payments as PaymentWithBooking[]);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (user) fetchData();
-    else setLoading(false);
-  }, [user, authLoading, fetchData]);
-
-  // Poll for status updates
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
-  }, [user, fetchData]);
-
-  const activeBookings = bookings.filter((b) => ['pending', 'confirmed', 'in_progress', 'payment_submitted'].includes(b.status));
-  const completedBookings = bookings.filter((b) => b.status === 'paid' || b.status === 'completed');
-  const totalSpent = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amount), 0);
-  const pendingPayments = payments.filter((p) => p.status === 'pending' || p.status === 'payment_submitted');
+  const {
+    user, authLoading, loading,
+    selectedSlip, setSelectedSlip,
+    activeBookings, completedBookings, totalSpent, pendingPayments, payments,
+  } = useCustomerDashboard();
 
   if (authLoading || loading) {
     return (
@@ -184,24 +148,6 @@ export function CustomerDashboardPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; label: string; value: string | number; color: string }) {
-  const colors: Record<string, string> = {
-    emerald: 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/30',
-    cyan: 'text-neon-cyan bg-neon-cyan/10 border-neon-cyan/30',
-    violet: 'text-neon-violet bg-neon-violet/10 border-neon-violet/30',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-  };
-  return (
-    <GlassCard className="p-5">
-      <div className={`mb-3 inline-flex rounded-xl border p-2.5 ${colors[color]}`}>
-        <Icon size={20} />
-      </div>
-      <p className="text-2xl font-bold text-white">{typeof value === 'number' ? <AnimatedCounter value={value} /> : value}</p>
-      <p className="text-xs text-gray-500 mt-1">{label}</p>
-    </GlassCard>
   );
 }
 
