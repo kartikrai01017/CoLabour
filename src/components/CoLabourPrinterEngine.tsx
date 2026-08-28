@@ -44,53 +44,49 @@ export function CoLabourPrinterEngine({
 
   return (
     <div className="w-full flex flex-col items-center justify-center my-6">
-      {/* 3D Hardware POS Terminal Chassis */}
-      <div className="relative w-full max-w-md bg-gradient-to-b from-[#141b2d] to-[#0b101c] rounded-3xl border border-neon-cyan/30 shadow-[0_20px_50px_rgba(6,182,212,0.15)] p-6 overflow-hidden">
-        {/* Glow accent highlights */}
-        <div className="absolute -top-16 -right-16 w-36 h-36 bg-neon-cyan/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
-
+      {/* POS Terminal Chassis */}
+      <div className="relative w-full max-w-md bg-nb-surface rounded-nb-2xl border-[4px] border-nb-ink shadow-nb-xl p-6 overflow-hidden">
         {/* Top Header & Indicator LEDs */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b-2 border-nb-ink/20">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-neon-emerald animate-pulse" />
-              <span className="w-2.5 h-2.5 rounded-full bg-neon-cyan" />
-              <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-nb-accent-green animate-pulse border border-nb-ink" />
+              <span className="w-2.5 h-2.5 rounded-full bg-nb-accent-blue border border-nb-ink" />
+              <span className="w-2.5 h-2.5 rounded-full bg-nb-accent-pink border border-nb-ink" />
             </div>
-            <span className="text-xs font-mono font-bold tracking-widest text-gray-300 uppercase">
+            <span className="text-xs font-mono font-bold tracking-widest text-nb-ink uppercase">
               COLABOUR-POS // 4.2K
             </span>
           </div>
-          <span className="text-[10px] font-mono uppercase bg-neon-emerald/10 text-neon-emerald px-2 py-0.5 rounded border border-neon-emerald/30">
+          <span className="text-[10px] font-mono font-bold uppercase bg-nb-accent-green/20 text-nb-ink px-2 py-0.5 rounded-nb-sm border-[1.5px] border-nb-ink">
             ONLINE
           </span>
         </div>
 
         {/* Paper Dispense Feed Slot */}
-        <div className="relative mt-4 mb-2 bg-[#080c14] h-5 rounded-lg border-x-2 border-y border-white/20 shadow-inner flex items-center justify-center">
-          <div className="w-48 h-1 bg-neon-cyan/40 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+        <div className="relative mt-4 mb-2 bg-nb-surface-muted h-5 rounded-nb-md border-[2px] border-nb-ink/30 shadow-inner flex items-center justify-center">
+          <div className="w-48 h-1 bg-nb-accent-green/40 rounded-full" />
         </div>
 
         {/* Dispense Trigger Section */}
         {!isPrinted && !isPrinting && (
           <div className="py-6 flex flex-col items-center text-center animate-fade-in">
-            <div className="w-16 h-16 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center mb-3 text-pink-400 shadow-[0_0_25px_rgba(236,72,153,0.25)]">
+            <div className="w-16 h-16 rounded-nb-lg bg-nb-accent-pink/20 border-[2px] border-nb-ink flex items-center justify-center mb-3 text-nb-ink shadow-nb-md">
               <Printer size={32} className="animate-bounce" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-1">CoLabour Thermal POS Ready</h3>
-            <p className="text-xs text-gray-400 max-w-xs mb-5">
+            <h3 className="text-lg font-extrabold text-nb-ink mb-1">CoLabour Thermal POS Ready</h3>
+            <p className="text-xs font-medium text-nb-text-muted max-w-xs mb-5">
               Payment confirmed by worker. Push the button to dispense your tamper-proof digital work slip.
             </p>
 
-            {/* Interactive Pink Dispense Button */}
+            {/* Interactive Dispense Button */}
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleDispense}
-              className="relative group px-8 py-3.5 rounded-2xl font-bold text-white text-sm bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 shadow-[0_0_30px_rgba(244,63,94,0.45)] border border-pink-400/40 hover:shadow-[0_0_40px_rgba(244,63,94,0.7)] transition-all flex items-center gap-2"
+              className="relative group px-8 py-3.5 rounded-nb-md font-extrabold text-nb-ink text-sm bg-nb-accent-pink border-[3px] border-nb-ink shadow-nb-md hover:shadow-nb-lg transition-all flex items-center gap-2"
             >
-              <Sparkles size={18} className="animate-spin text-pink-200" />
+              <Sparkles size={18} className="animate-spin" />
               ⚡ TAP TO DISPENSE SLIP
             </motion.button>
           </div>
@@ -102,12 +98,12 @@ export function CoLabourPrinterEngine({
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-              className="w-12 h-12 rounded-full border-3 border-pink-500 border-t-transparent mb-3"
+              className="w-12 h-12 rounded-full border-[3px] border-nb-ink border-t-nb-accent-pink mb-3"
             />
-            <p className="text-sm font-mono text-pink-400 animate-pulse font-semibold">
+            <p className="text-sm font-mono font-bold text-nb-ink animate-pulse">
               PRINTING THERMAL SLIP...
             </p>
-            <p className="text-[11px] font-mono text-gray-500 mt-1">Ejecting encrypted thermal receipt...</p>
+            <p className="text-[11px] font-mono text-nb-text-muted mt-1">Ejecting encrypted thermal receipt...</p>
           </div>
         )}
 
@@ -226,12 +222,12 @@ export function CoLabourPrinterEngine({
               <div className="mt-5 flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={handleBrowserPrint}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+                  className="flex-1 py-2.5 px-4 rounded-nb-md border-[2px] border-nb-ink bg-nb-surface hover:bg-nb-surface-muted text-nb-ink text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-nb-sm hover:shadow-nb-md"
                 >
                   <Download size={14} /> Print / Save PDF
                 </button>
                 {onDone && (
-                  <NeonButton size="sm" variant="emerald" onClick={onDone} className="flex-1">
+                  <NeonButton size="sm" variant="amber" onClick={onDone} className="flex-1">
                     Back to Dashboard <ArrowRight size={14} />
                   </NeonButton>
                 )}

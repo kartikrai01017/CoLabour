@@ -63,25 +63,22 @@ export function CustomerDashboardPage() {
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16">
-        <Loader2 size={32} className="animate-spin text-neon-emerald" />
+        <Loader2 size={32} className="animate-spin text-nb-ink" />
       </div>
     );
   }
 
   return (
     <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
-      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
-
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
-            <h1 className="text-2xl font-bold text-white">My Customer Dashboard</h1>
-            <p className="text-sm text-gray-400">Welcome back, {user?.name}</p>
+            <h1 className="text-2xl font-extrabold text-nb-ink">My Customer Dashboard</h1>
+            <p className="text-sm font-medium text-nb-text-muted">Welcome back, {user?.name}</p>
           </div>
           <Link to="/workers">
-            <NeonButton variant="emerald"><Briefcase size={16} /> Book a Worker</NeonButton>
+            <NeonButton variant="amber"><Briefcase size={16} /> Book a Worker</NeonButton>
           </Link>
         </div>
 
@@ -95,16 +92,16 @@ export function CustomerDashboardPage() {
 
         {/* Pending payments alert */}
         {pendingPayments.length > 0 && (
-          <GlassCard className="mb-6 border-amber-500/30 p-4 animate-slide-up">
+          <GlassCard className="mb-6 border-[3px] border-nb-accent-yellow p-4 animate-slide-up shadow-nb-md">
             <div className="flex items-center gap-3">
-              <AlertCircle size={20} className="text-amber-400 animate-pulse" />
+              <AlertCircle size={20} className="text-nb-accent-yellow animate-pulse" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">You have {pendingPayments.length} pending payment action(s)</p>
-                <p className="text-xs text-gray-400">Complete or track your UPI payment to settle your booking</p>
+                <p className="text-sm font-bold text-nb-ink">You have {pendingPayments.length} pending payment action(s)</p>
+                <p className="text-xs font-medium text-nb-text-muted">Complete or track your UPI payment to settle your booking</p>
               </div>
               {pendingPayments[0] && (
                 <Link to={`/payment/${pendingPayments[0].booking_id}`}>
-                  <NeonButton size="sm" variant="emerald">Open Payment Gateway <ArrowRight size={14} /></NeonButton>
+                  <NeonButton size="sm" variant="amber">Open Payment Gateway <ArrowRight size={14} /></NeonButton>
                 </Link>
               )}
             </div>
@@ -114,13 +111,13 @@ export function CustomerDashboardPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Active bookings */}
           <div>
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Clock size={18} className="text-neon-cyan" /> Active Bookings
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-nb-ink">
+              <Clock size={18} /> Active Bookings
             </h2>
             <div className="space-y-4">
               {activeBookings.length === 0 ? (
                 <GlassCard className="p-8 text-center">
-                  <p className="text-gray-500 mb-4">No active bookings</p>
+                  <p className="text-nb-text-muted font-medium mb-4">No active bookings</p>
                   <Link to="/workers"><NeonButton variant="ghost" size="sm">Browse Workers</NeonButton></Link>
                 </GlassCard>
               ) : (
@@ -133,12 +130,12 @@ export function CustomerDashboardPage() {
 
           {/* Completed & receipts */}
           <div>
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Receipt size={18} className="text-neon-emerald" /> History & Official POS Slips
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-nb-ink">
+              <Receipt size={18} /> History & Official POS Slips
             </h2>
             <div className="space-y-4">
               {completedBookings.length === 0 ? (
-                <GlassCard className="p-8 text-center text-gray-500">No completed bookings yet</GlassCard>
+                <GlassCard className="p-8 text-center text-nb-text-muted font-medium">No completed bookings yet</GlassCard>
               ) : (
                 completedBookings.map((booking) => {
                   const p = payments.find((pay) => pay.booking_id === booking.id);
@@ -160,13 +157,13 @@ export function CustomerDashboardPage() {
       {/* Slip Modal */}
       {selectedSlip && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/85 backdrop-blur-md overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-nb-ink/50 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSelectedSlip(null)}
         >
           <div className="relative w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSelectedSlip(null)}
-              className="absolute top-2 right-2 z-20 rounded-full bg-base-800 p-2 text-gray-400 hover:text-white border border-white/10"
+              className="absolute top-2 right-2 z-20 rounded-nb-md bg-nb-surface border-[2px] border-nb-ink p-2 text-nb-ink font-bold shadow-nb-sm"
             >
               <X size={18} />
             </button>
@@ -231,17 +228,17 @@ function BookingCard({
     <GlassCard hover className="p-5 animate-slide-up">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`h-12 w-12 rounded-xl border ${style.bg} ${style.border} flex items-center justify-center`}>
-            <Icon className={style.text} size={24} />
+          <div className={`h-12 w-12 rounded-nb-lg border-[2px] border-nb-ink bg-nb-surface flex items-center justify-center shadow-nb-sm`}>
+            <Icon className="text-nb-ink" size={24} />
           </div>
           <div>
-            <h3 className="font-semibold text-white">{booking.worker?.users?.name ?? 'Worker'}</h3>
-            <p className="text-xs text-gray-400">{booking.category}</p>
+            <h3 className="font-bold text-nb-ink">{booking.worker?.users?.name ?? 'Worker'}</h3>
+            <p className="text-xs font-medium text-nb-text-muted">{booking.category}</p>
           </div>
         </div>
         <Badge variant={variant}>{booking.status === 'confirmed' ? 'Accepted' : booking.status.replace('_', ' ')}</Badge>
       </div>
-      <div className="space-y-1.5 text-sm text-gray-400 mb-3">
+      <div className="space-y-1.5 text-sm font-medium text-nb-text-muted mb-3">
         <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(booking.scheduled_at).toLocaleString()}</div>
         <div className="flex items-center gap-2"><MapPin size={14} /> {booking.address}</div>
         <div className="flex items-center gap-2"><Wallet size={14} /> ₹{Number(booking.total_amount).toFixed(2)}</div>
@@ -264,7 +261,7 @@ function BookingCard({
         )}
         {showReceipt && (booking.status === 'paid' || booking.status === 'completed') && (
           <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5 text-xs text-neon-emerald font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-nb-accent-green font-bold">
               <CheckCircle size={14} /> Payment Settled
             </span>
             {onViewSlip && (

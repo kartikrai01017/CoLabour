@@ -152,7 +152,7 @@ export function BookingPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-16">
-        <Loader2 size={32} className="animate-spin text-neon-emerald" />
+        <Loader2 size={32} className="animate-spin text-nb-ink" />
       </div>
     );
   }
@@ -160,7 +160,7 @@ export function BookingPage() {
   if (!worker) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center pt-16 gap-4">
-        <p className="text-gray-400">Worker not found.</p>
+        <p className="text-nb-text-muted font-medium">Worker not found.</p>
         <Link to="/workers"><NeonButton variant="ghost">Browse Workers</NeonButton></Link>
       </div>
     );
@@ -171,9 +171,6 @@ export function BookingPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden pt-20 pb-12">
-      <GlowOrb className="top-20 -left-20 h-80 w-80 bg-neon-emerald/10" />
-      <GlowOrb className="bottom-0 right-0 h-80 w-80 bg-neon-cyan/10" />
-
       {/* Radar Scanner Modal */}
       <RadarScannerModal
         isOpen={showRadarModal}
@@ -187,29 +184,29 @@ export function BookingPage() {
       />
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <Link to={`/workers/${id}`} className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-neon-emerald transition-colors">
+        <Link to={`/workers/${id}`} className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-nb-text-muted hover:text-nb-accent-orange transition-colors">
           <ArrowLeft size={16} /> Back to Profile
         </Link>
 
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold gradient-text-emerald-cyan">Book Your Appointment</h1>
-          <p className="mt-2 text-gray-400">Schedule a service with {worker.users?.name}</p>
+          <h1 className="text-3xl font-extrabold text-nb-ink">Book Your Appointment</h1>
+          <p className="mt-2 text-nb-text-muted">Schedule a service with {worker.users?.name}</p>
         </div>
 
         {/* Worker summary & live proximity badge */}
         <GlassCard className="mb-6 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className={`h-16 w-16 rounded-2xl border ${style.bg} ${style.border} flex items-center justify-center`}>
-              <Icon className={style.text} size={30} />
+            <div className={`h-16 w-16 rounded-nb-lg border-[3px] border-nb-ink bg-nb-surface flex items-center justify-center shadow-nb-sm`}>
+              <Icon className="text-nb-ink" size={30} />
             </div>
             <div>
-              <h3 className="font-semibold text-white">{worker.users?.name}</h3>
-              <p className="text-sm text-gray-400">{worker.category} • ₹{worker.hourly_rate}/hr</p>
+              <h3 className="font-bold text-nb-ink">{worker.users?.name}</h3>
+              <p className="text-sm font-medium text-nb-text-muted">{worker.category} • ₹{worker.hourly_rate}/hr</p>
               <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-neon-emerald/15 px-2 py-0.5 text-[11px] font-bold text-neon-emerald border border-neon-emerald/30">
+                <span className="inline-flex items-center gap-1 rounded-nb-sm bg-nb-accent-blue/20 px-2 py-0.5 text-[11px] font-bold text-nb-ink border border-nb-ink/20">
                   <Navigation size={11} /> {distanceKm.toFixed(1)} km away
                 </span>
-                <span className="text-[11px] text-gray-400">~{reachTime} mins reach</span>
+                <span className="text-[11px] font-medium text-nb-text-muted">~{reachTime} mins reach</span>
               </div>
             </div>
           </div>
@@ -219,12 +216,12 @@ export function BookingPage() {
         <form onSubmit={handlePreSubmit} className="space-y-6">
           {/* Date & Time */}
           <GlassCard className="p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Calendar size={18} className="text-neon-cyan" /> Date & Time
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-nb-ink">
+              <Calendar size={18} /> Date & Time
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Date</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-nb-text-muted">Date</label>
                 <input
                   type="date"
                   value={date}
@@ -235,7 +232,7 @@ export function BookingPage() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Time</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-nb-text-muted">Time</label>
                 <input
                   type="time"
                   value={time}
@@ -246,12 +243,12 @@ export function BookingPage() {
               </div>
             </div>
             <div className="mt-4">
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Duration (hours)</label>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-nb-text-muted">Duration (hours)</label>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setHours(String(Math.max(1, parseInt(hours) - 1)))}
-                  className="rounded-lg border border-white/10 px-3 py-2 text-gray-300 hover:border-neon-emerald/30"
+                  className="rounded-nb-md border-[2px] border-nb-ink bg-nb-surface px-3 py-2 text-nb-ink font-bold shadow-nb-sm hover:shadow-nb-md active:shadow-nb-pressed active:translate-x-[3px] active:translate-y-[3px]"
                 >
                   -
                 </button>
@@ -266,11 +263,11 @@ export function BookingPage() {
                 <button
                   type="button"
                   onClick={() => setHours(String(parseInt(hours) + 1))}
-                  className="rounded-lg border border-white/10 px-3 py-2 text-gray-300 hover:border-neon-emerald/30"
+                  className="rounded-nb-md border-[2px] border-nb-ink bg-nb-surface px-3 py-2 text-nb-ink font-bold shadow-nb-sm hover:shadow-nb-md active:shadow-nb-pressed active:translate-x-[3px] active:translate-y-[3px]"
                 >
                   +
                 </button>
-                <span className="text-sm text-gray-400">hours</span>
+                <span className="text-sm font-medium text-nb-text-muted">hours</span>
               </div>
             </div>
           </GlassCard>
@@ -278,17 +275,17 @@ export function BookingPage() {
           {/* Location */}
           <GlassCard className="p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-200">
-                <MapPin size={18} className="text-neon-emerald" /> Service Location & Live GPS
+              <h2 className="flex items-center gap-2 text-lg font-bold text-nb-ink">
+                <MapPin size={18} /> Service Location & Live GPS
               </h2>
-              <span className="flex items-center gap-1 rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-2.5 py-0.5 text-xs font-mono text-neon-cyan">
+              <span className="flex items-center gap-1 rounded-nb-sm border-[1.5px] border-nb-ink bg-nb-accent-green/20 px-2.5 py-0.5 text-xs font-bold text-nb-ink">
                 <Radio size={12} className="animate-pulse" /> Live Radar Ready
               </span>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">Address / Flat / Landmark</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-nb-text-muted">Address / Flat / Landmark</label>
                 <textarea
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -303,26 +300,26 @@ export function BookingPage() {
                   <Navigation size={16} /> Use My Current GPS Location
                 </NeonButton>
                 {userCoords && (
-                  <span className="text-xs text-gray-400 font-mono">
+                  <span className="text-xs text-nb-text-muted font-mono font-medium">
                     Lat: {userCoords.lat.toFixed(4)}, Lng: {userCoords.lng.toFixed(4)}
                   </span>
                 )}
               </div>
 
               {/* Interactive Radar Sonar mini preview map */}
-              <div className="relative h-44 rounded-2xl border border-white/10 bg-base-950 overflow-hidden flex items-center justify-center">
+              <div className="relative h-44 rounded-nb-xl border-[3px] border-nb-ink bg-nb-surface overflow-hidden flex items-center justify-center shadow-nb-md">
                 <div className="absolute inset-0 grid-bg opacity-40" />
                 {/* Sonar rings */}
-                <div className="absolute h-32 w-32 rounded-full border border-neon-emerald/20 animate-ping opacity-30" />
-                <div className="absolute h-20 w-20 rounded-full border border-neon-cyan/30" />
+                <div className="absolute h-32 w-32 rounded-full border-[1.5px] border-nb-accent-green/30 animate-ping opacity-30" />
+                <div className="absolute h-20 w-20 rounded-full border-[2px] border-nb-ink/20" />
 
                 <div className="relative z-10 flex flex-col items-center gap-2">
-                  <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-neon-emerald/20 border border-neon-emerald text-neon-emerald shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+                  <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-nb-accent-green border-[2px] border-nb-ink text-nb-ink shadow-nb-md">
                     <Navigation size={20} />
                   </div>
                   <div className="text-center">
-                    <p className="text-xs font-bold text-white">Live Proximity: {distanceKm.toFixed(1)} km</p>
-                    <p className="text-[10px] text-gray-400">Worker is stationed near {worker.location ?? 'Bangalore'}</p>
+                    <p className="text-xs font-bold text-nb-ink">Live Proximity: {distanceKm.toFixed(1)} km</p>
+                    <p className="text-[10px] font-medium text-nb-text-muted">Worker is stationed near {worker.location ?? 'Bangalore'}</p>
                   </div>
                 </div>
               </div>
@@ -331,8 +328,8 @@ export function BookingPage() {
 
           {/* Notes */}
           <GlassCard className="p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-200">
-              <Clock size={18} className="text-neon-violet" /> Problem Description & Notes
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-nb-ink">
+              <Clock size={18} /> Problem Description & Notes
             </h2>
             <textarea
               value={notes}
@@ -343,29 +340,29 @@ export function BookingPage() {
           </GlassCard>
 
           {/* Summary & Proceed with Radar */}
-          <GlassCard className="p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-200">Booking Summary</h2>
+          <GlassCard className="p-6 border-[4px] shadow-nb-xl">
+            <h2 className="mb-4 text-lg font-bold text-nb-ink">Booking Summary</h2>
             <div className="space-y-2 mb-4">
               <SummaryRow label="Worker" value={worker.users?.name ?? ''} />
               <SummaryRow label="Category" value={worker.category} />
               <SummaryRow label="Duration" value={`${hours} hour(s)`} />
               <SummaryRow label="Rate" value={`₹${worker.hourly_rate}/hr`} />
               <SummaryRow label="Distance" value={`${distanceKm.toFixed(1)} km (~${reachTime} mins)`} />
-              <div className="border-t border-white/10 pt-2">
+              <div className="border-t-2 border-nb-ink/10 pt-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-200">Total Amount (0% fee)</span>
-                  <span className="text-2xl font-bold gradient-text-emerald-cyan">₹{totalAmount.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-nb-ink">Total Amount (0% fee)</span>
+                  <span className="text-2xl font-extrabold text-nb-accent-orange">₹{totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="mb-4 flex items-center gap-2 rounded-nb-md border-[2px] border-nb-accent-red bg-nb-accent-red/10 px-4 py-3 text-sm font-medium text-nb-accent-red">
                 <AlertCircle size={16} /> {error}
               </div>
             )}
 
-            <NeonButton type="submit" fullWidth size="lg" disabled={submitting}>
+            <NeonButton type="submit" fullWidth size="lg" variant="amber" disabled={submitting}>
               {submitting ? (
                 <><Loader2 size={18} className="animate-spin" /> Dispatching...</>
               ) : (
@@ -379,21 +376,21 @@ export function BookingPage() {
       <style>{`
         .booking-input {
           width: 100%;
-          border-radius: 0.75rem;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(11,15,25,0.6);
+          border-radius: 8px;
+          border: 2px solid #171717;
+          background: #FFFFFF;
           padding: 0.625rem 1rem;
-          color: #e5e7eb;
+          color: #171717;
           font-size: 0.875rem;
+          font-weight: 500;
           outline: none;
-          transition: all 0.2s;
+          transition: all 0.15s;
+          box-shadow: 3px 3px 0 #171717;
         }
         .booking-input:focus {
-          border-color: rgba(16,185,129,0.4);
-          box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
+          box-shadow: 4px 4px 0 #171717;
         }
-        .booking-input::placeholder { color: #6b7280; }
-        .booking-input::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+        .booking-input::placeholder { color: #66635D; }
       `}</style>
     </div>
   );
@@ -402,8 +399,8 @@ export function BookingPage() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <span className="text-gray-400">{label}</span>
-      <span className="font-medium text-gray-200">{value}</span>
+      <span className="text-nb-text-muted font-medium">{label}</span>
+      <span className="font-bold text-nb-ink">{value}</span>
     </div>
   );
 }
