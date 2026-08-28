@@ -28,18 +28,6 @@ export interface User {
   created_at?: string;
 }
 
-<<<<<<< HEAD
-export interface Review {
-  id: string;
-  user_name: string;
-  rating: number;
-  comment: string;
-  date: string;
-  avatar_url?: string;
-}
-
-=======
->>>>>>> origin/main
 export interface WorkerProfile {
   id?: string;
   user_id: string;
@@ -50,12 +38,6 @@ export interface WorkerProfile {
   hourly_rate: number;
   rating?: number;
   total_ratings?: number;
-<<<<<<< HEAD
-  reviews?: Review[];
-  photo_url?: string | null;
-  gallery_urls?: string[];
-=======
->>>>>>> origin/main
   is_verified?: boolean;
   location?: string | null;
   avatar_url?: string | null;

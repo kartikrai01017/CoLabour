@@ -12,29 +12,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
-<<<<<<< HEAD
-    "@types/three": "^0.185.4",
-    "leaflet": "^1.9.4",
-=======
->>>>>>> origin/main
     "lucide-react": "^0.446.0",
     "motion": "^13.1.1",
     "qrcode.react": "^4.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-<<<<<<< HEAD
-    "react-router-dom": "^6.26.2",
-    "three": "^0.185.1"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.9.1",
-    "@types/leaflet": "^1.9.22",
-=======
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
->>>>>>> origin/main
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
