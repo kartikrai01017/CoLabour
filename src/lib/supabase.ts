@@ -28,15 +28,6 @@ export interface User {
   created_at?: string;
 }
 
-export interface Review {
-  id: string;
-  user_name: string;
-  rating: number;
-  comment: string;
-  date: string;
-  avatar_url?: string;
-}
-
 export interface WorkerProfile {
   id?: string;
   user_id: string;
@@ -47,9 +38,6 @@ export interface WorkerProfile {
   hourly_rate: number;
   rating?: number;
   total_ratings?: number;
-  reviews?: Review[];
-  photo_url?: string | null;
-  gallery_urls?: string[];
   is_verified?: boolean;
   location?: string | null;
   avatar_url?: string | null;
