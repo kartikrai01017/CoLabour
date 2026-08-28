@@ -35,7 +35,7 @@ export function CoLabourAIWidget() {
       {/* Interactive Chat Drawer / Modal */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-start sm:justify-start p-2 sm:p-6 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-start justify-start sm:justify-start p-2 sm:p-6 pt-16 sm:pt-16 bg-black/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -69,6 +69,7 @@ export function CoLabourAIWidget() {
                   >
                     {ttsEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
@@ -120,6 +121,7 @@ export function CoLabourAIWidget() {
                               </p>
                             </div>
                           )}
+
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.97 }}
@@ -161,6 +163,7 @@ export function CoLabourAIWidget() {
                     </div>
                   </div>
                 )}
+
                 <div ref={messagesEndRef} />
               </div>
 
@@ -194,6 +197,7 @@ export function CoLabourAIWidget() {
                     placeholder="Ask about pricing, workers, or UPI payments..."
                     className="flex-1 rounded-xl border-2 border-black bg-[#FAF7F2] px-3.5 py-2 text-xs font-bold text-neutral-900 placeholder-neutral-400 outline-none shadow-[2px_2px_0px_#000000] focus:bg-white transition-all"
                   />
+
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
